@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>Nexus · Custom Start Page</title>
+    <title>Shafin's Space</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%23000000' rx='20'/%3E%3Cpath fill='%233b82f6' d='M30 25h40a5 5 0 0 1 5 5v40a5 5 0 0 1-5 5H30a5 5 0 0 1-5-5V30a5 5 0 0 1 5-5zm5 10v30h30V35H35z'/%3E%3C/svg%3E">
     <style>
@@ -23,7 +23,20 @@
             gap: 1rem;
             overflow: hidden;
         }
-        /* Top bar */
+        /* Header */
+        .page-header {
+            flex-shrink: 0;
+            margin-bottom: -0.25rem;
+        }
+        .page-header h1 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            background: linear-gradient(135deg, #ffffff, #3b82f6);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+        /* Top bar - side by side search */
         .top-bar {
             display: flex;
             gap: 1rem;
@@ -108,24 +121,22 @@
         .dropdown-item:hover { background: #1f2937; }
         .dropdown-item img { width: 20px; height: 20px; }
 
-        /* Bookmark Bar - NO TILES, just clean folders */
+        /* Bookmark Bar - COMPLETELY FREE, NO SCROLLBAR, WRAPS NATURALLY */
         .bookmark-bar {
             background: transparent;
             flex-shrink: 0;
             padding: 0.5rem 0;
+            overflow: visible;
+            max-height: none;
         }
         .bookmark-bar-inner {
             display: flex;
             flex-wrap: wrap;
             gap: 0.25rem;
             align-items: center;
+            overflow: visible;
         }
-        
-        /* Folder styles - clean and clickable */
-        .folder-wrapper {
-            position: relative;
-            display: inline-block;
-        }
+        .folder-wrapper { position: relative; display: inline-block; }
         .folder-button {
             background: transparent;
             border: none;
@@ -139,14 +150,8 @@
             border-radius: 0.5rem;
             transition: 0.1s;
         }
-        .folder-button:hover {
-            background: #1f2937;
-        }
-        .folder-button i {
-            color: #f59e0b;
-        }
-        
-        /* Dropdown menu for folders */
+        .folder-button:hover { background: #1f2937; }
+        .folder-button i { color: #f59e0b; }
         .folder-dropdown-menu {
             position: absolute;
             top: 100%;
@@ -161,11 +166,7 @@
             padding: 0.5rem 0;
             box-shadow: 0 10px 25px rgba(0,0,0,0.5);
         }
-        .folder-wrapper:hover .folder-dropdown-menu {
-            display: flex;
-        }
-        
-        /* Menu items */
+        .folder-wrapper:hover .folder-dropdown-menu { display: flex; }
         .menu-item {
             padding: 0.6rem 1rem;
             color: #e5e7eb;
@@ -176,18 +177,9 @@
             gap: 10px;
             cursor: pointer;
         }
-        .menu-item:hover {
-            background: #1f2937;
-        }
-        .menu-item img {
-            width: 16px;
-            height: 16px;
-        }
-        
-        /* Subfolder */
-        .subfolder-wrapper {
-            position: relative;
-        }
+        .menu-item:hover { background: #1f2937; }
+        .menu-item img { width: 16px; height: 16px; }
+        .subfolder-wrapper { position: relative; }
         .subfolder-trigger {
             padding: 0.6rem 1rem;
             display: flex;
@@ -207,76 +199,79 @@
             flex-direction: column;
             padding: 0.3rem 0;
         }
-        .subfolder-wrapper:hover .subfolder-menu {
-            display: flex;
-        }
+        .subfolder-wrapper:hover .subfolder-menu { display: flex; }
 
-        /* Categories Section - App Drawer Style */
+        /* Categories Section - Single line shrinkable rounded square tiles */
         .categories-section {
             flex: 1;
             overflow-y: auto;
             padding-right: 0.3rem;
         }
         .category-row {
-            margin-bottom: 2rem;
+            margin-bottom: 1.5rem;
         }
         .category-title {
-            font-size: 1rem;
+            font-size: 0.9rem;
             font-weight: 600;
             letter-spacing: 0.5px;
             color: #9ca3af;
-            margin-bottom: 1rem;
+            margin-bottom: 0.8rem;
             border-left: 3px solid #3b82f6;
             padding-left: 0.7rem;
         }
-        .app-drawer-grid {
+        /* Flex container that allows shrinking - NO WRAP, NO SCROLL */
+        .tile-row {
             display: flex;
-            flex-wrap: wrap;
-            gap: 1.2rem;
+            flex-wrap: nowrap;
+            gap: 0.8rem;
+            overflow-x: visible;
+            width: 100%;
         }
-        /* Round square tile with name under icon */
-        .app-tile {
+        /* Rounded square tile that shrinks dynamically */
+        .shrink-tile {
             display: flex;
             flex-direction: column;
             align-items: center;
             text-decoration: none;
-            width: 85px;
+            min-width: 55px;
+            max-width: 85px;
+            flex: 1 1 0px;
             transition: transform 0.15s ease;
         }
-        .app-tile:hover {
+        .shrink-tile:hover {
             transform: translateY(-3px);
         }
-        .tile-icon {
-            width: 70px;
-            height: 70px;
+        .tile-square {
+            width: 100%;
+            aspect-ratio: 1 / 1;
             background: #121212;
             border-radius: 18px;
             display: flex;
             align-items: center;
             justify-content: center;
             border: 1px solid #2c2c2c;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
             transition: all 0.2s;
         }
-        .app-tile:hover .tile-icon {
+        .shrink-tile:hover .tile-square {
             background: #1e1e2a;
             border-color: #3b82f6;
         }
-        .tile-icon img {
-            width: 38px;
-            height: 38px;
+        .tile-square img {
+            width: 55%;
+            height: 55%;
             object-fit: contain;
         }
-        .tile-name {
-            font-size: 0.7rem;
+        .tile-label {
+            font-size: 0.65rem;
             font-weight: 500;
-            margin-top: 0.5rem;
+            margin-top: 0.4rem;
             text-align: center;
-            max-width: 80px;
+            width: 100%;
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
             color: #bbbbbb;
+            padding: 0 0.2rem;
         }
         .empty-cat {
             color: #4b5563;
@@ -284,14 +279,15 @@
             padding: 1rem;
             text-align: center;
         }
-
-        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar { width: 5px; height: 5px; }
         ::-webkit-scrollbar-track { background: #0a0a0a; }
         ::-webkit-scrollbar-thumb { background: #333; border-radius: 5px; }
     </style>
 </head>
 <body>
 <div class="app">
+    <div class="page-header"><h1>Shafin's Space</h1></div>
+    
     <div class="top-bar">
         <div class="search-engine-wrapper">
             <div class="search-container">
@@ -315,18 +311,19 @@
         </div>
     </div>
 
-    <!-- Bookmark Bar - Clean folder list -->
+    <!-- Bookmark Bar - JSON folder structure (FREE, NO SCROLL) -->
     <div class="bookmark-bar" id="bookmarkBarContainer">
         <div class="bookmark-bar-inner">Loading bookmarks...</div>
     </div>
 
-    <!-- Categories Section - App drawer tiles -->
+    <!-- Categories Section - Cat A,B,C,D,E as shrinkable rounded square tiles -->
     <div class="categories-section" id="categoriesContainer">
         <div style="text-align: center; padding: 2rem;"><i class="fas fa-spinner fa-pulse"></i> Loading categories...</div>
     </div>
 </div>
 
 <script>
+    // DATA SOURCES
     const CSV_BOOKMARKS_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSxVk_HHPGsnAkM1qeSshRjzRXQ7BhKbk2OFTy-nurrhUQSCd7lz3LFOahHU_nqYd9OIxIu5wkzXEZZ/pub?gid=26452786&single=true&output=csv";
     const SEARCH_ENGINES_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSxVk_HHPGsnAkM1qeSshRjzRXQ7BhKbk2OFTy-nurrhUQSCd7lz3LFOahHU_nqYd9OIxIu5wkzXEZZ/pub?gid=1271015321&single=true&output=csv";
     const JSON_BOOKMARKS_URL = "https://raw.githubusercontent.com/shafin-protic/Web_Bookmarks/refs/heads/main/Web_Bookmarks.json";
@@ -335,6 +332,7 @@
     let searchEngines = [];
     let currentEngine = null;
     let allBookmarksForSearch = [];
+    let toolbarItems = [];
 
     function getFavicon(url) {
         try { const domain = new URL(url).hostname; return `https://www.google.com/s2/favicons?domain=${domain}&sz=64`; } catch(e) { return ""; }
@@ -390,7 +388,7 @@
     async function loadSearchEngines() {
         try {
             const rows = await fetchCSV(SEARCH_ENGINES_URL);
-            if (rows.length < 2) return [];
+            if (rows.length < 2) return [{ name: "Google", urlTemplate: "https://www.google.com/search?q=%s", active: true, icon: "" }];
             const engines = [];
             for (let i = 1; i < rows.length; i++) {
                 const row = rows[i];
@@ -405,14 +403,11 @@
                 const active = (useIt === "yes" || useIt === "y" || useIt === "true");
                 engines.push({ name, urlTemplate, active, icon });
             }
-            if (engines.length === 0) {
-                engines.push({ name: "Google", urlTemplate: "https://www.google.com/search?q=%s", active: true, icon: "" });
-            }
+            if (engines.length === 0) engines.push({ name: "Google", urlTemplate: "https://www.google.com/search?q=%s", active: true, icon: "" });
             return engines;
         } catch(e) { return [{ name: "Google", urlTemplate: "https://www.google.com/search?q=%s", active: true, icon: "" }]; }
     }
 
-    // Recursive menu builder
     function buildMenuHtml(items) {
         let html = "";
         for (const item of items) {
@@ -478,24 +473,21 @@
     function flattenForSearch(items, arr = []) {
         for (const item of items) {
             if (item.type === "bookmark" && item.uri) {
-                arr.push({ name: item.title, url: item.uri, icon: item.iconUri });
+                arr.push({ name: item.title, url: item.uri });
             }
-            if (item.children) {
-                flattenForSearch(item.children, arr);
-            }
+            if (item.children) flattenForSearch(item.children, arr);
         }
         return arr;
     }
 
-    // Render bookmark bar - clean folders with proper dropdowns
-    function renderBookmarkBar(toolbarItems) {
+    function renderBookmarkBar(items) {
         const container = document.getElementById("bookmarkBarContainer");
-        if (!toolbarItems || toolbarItems.length === 0) {
-            container.innerHTML = '<div class="bookmark-bar-inner">No bookmarks in toolbar</div>';
+        if (!items || items.length === 0) {
+            container.innerHTML = '<div class="bookmark-bar-inner">No toolbar bookmarks</div>';
             return;
         }
         let html = '<div class="bookmark-bar-inner">';
-        for (const item of toolbarItems) {
+        for (const item of items) {
             if (item.type === "bookmark") {
                 const icon = item.iconUri && item.iconUri.startsWith("http") ? item.iconUri : getFavicon(item.uri);
                 html += `<a href="${escapeHtml(item.uri)}" target="_blank" class="folder-button" style="text-decoration: none;">
@@ -518,7 +510,6 @@
         container.innerHTML = html;
     }
 
-    // Render categories as app drawer tiles
     function renderCategories() {
         const container = document.getElementById("categoriesContainer");
         const categories = ["Cat A", "Cat B", "Cat C", "Cat D", "Cat E"];
@@ -538,14 +529,14 @@
             hasAny = true;
             html += `<div class="category-row">
                         <div class="category-title">${cat}</div>
-                        <div class="app-drawer-grid">`;
+                        <div class="tile-row">`;
             items.forEach(item => {
                 const iconUrl = (item.icon && item.icon.startsWith("http")) ? item.icon : getFavicon(item.url);
-                html += `<a href="${escapeHtml(item.url)}" target="_blank" class="app-tile">
-                            <div class="tile-icon">
+                html += `<a href="${escapeHtml(item.url)}" target="_blank" class="shrink-tile" title="${escapeHtml(item.name)}">
+                            <div class="tile-square">
                                 <img src="${iconUrl}" onerror="this.src='${getFavicon(item.url)}';">
                             </div>
-                            <span class="tile-name">${escapeHtml(item.name.length > 14 ? item.name.slice(0,12)+'..' : item.name)}</span>
+                            <div class="tile-label">${escapeHtml(item.name.length > 14 ? item.name.slice(0,12)+'..' : item.name)}</div>
                          </a>`;
             });
             html += `</div></div>`;
@@ -556,7 +547,6 @@
         container.innerHTML = html;
     }
 
-    // Bookmark search popup
     function updateBookmarkSearchPopup(query) {
         const dropdown = document.getElementById("bookmarkSearchDropdown");
         if (!query.trim()) { dropdown.style.display = "none"; return; }
@@ -633,7 +623,7 @@
             const jsonData = await jsonRes.json();
             
             const toolbarRawChildren = extractToolbarChildren(jsonData);
-            const toolbarItems = [];
+            toolbarItems = [];
             for (const child of toolbarRawChildren) {
                 const converted = convertNode(child);
                 if (converted) toolbarItems.push(converted);
@@ -641,17 +631,10 @@
             
             renderBookmarkBar(toolbarItems);
             
-            const allJsonItems = [];
-            function collectAll(node) {
-                if (node.type === "bookmark" && node.uri) {
-                    allJsonItems.push({ name: node.title, url: node.uri, icon: node.iconUri });
-                }
-                if (node.children) {
-                    node.children.forEach(collectAll);
-                }
+            allBookmarksForSearch = [];
+            for (const item of toolbarItems) {
+                flattenForSearch([item], allBookmarksForSearch);
             }
-            for (const item of toolbarItems) collectAll(item);
-            allBookmarksForSearch = allJsonItems;
             
             const engineBtn = document.getElementById("engineSelectorBtn");
             const engineDropdownDiv = document.getElementById("engineDropdown");
@@ -673,7 +656,7 @@
             
         } catch(err) {
             console.error(err);
-            document.getElementById("categoriesContainer").innerHTML = `<div style="color:red; padding:1rem;">Error: ${err.message}</div>`;
+            document.getElementById("categoriesContainer").innerHTML = `<div class="empty-cat">Error: ${err.message}</div>`;
         }
     }
     init();
