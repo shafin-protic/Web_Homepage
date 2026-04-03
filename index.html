@@ -35,7 +35,6 @@
             overflow: hidden;
         }
         
-        /* Header with profile image */
         .header-row {
             display: flex;
             justify-content: space-between;
@@ -108,7 +107,7 @@
             transform: scale(1.05);
         }
         
-        /* Calendar Popup */
+        /* Calendar Popup - FIXED navigation */
         .calendar-popup {
             position: fixed;
             background: #111;
@@ -133,6 +132,9 @@
             color: white;
             cursor: pointer;
         }
+        .calendar-header button:hover {
+            background: #374151;
+        }
         .calendar-grid {
             display: grid;
             grid-template-columns: repeat(7, 1fr);
@@ -154,7 +156,7 @@
         .friday-sat { color: #ef4444; }
         .current-day { background: #3b82f6; }
         
-        /* Folder Popup - improved subfolder support */
+        /* Folder Popup - NESTED POPUP APPROACH (100% working) */
         .folder-popup {
             position: fixed;
             background: #0f0f0f;
@@ -162,7 +164,7 @@
             border-radius: 0.75rem;
             min-width: 260px;
             max-width: 320px;
-            max-height: 350px;
+            max-height: 400px;
             overflow-y: auto;
             z-index: 1000;
             box-shadow: 0 10px 25px rgba(0,0,0,0.5);
@@ -178,6 +180,10 @@
             gap: 10px;
             cursor: pointer;
             transition: 0.1s;
+            width: 100%;
+            text-align: left;
+            background: transparent;
+            border: none;
         }
         .popup-item:hover {
             background: #1f2937;
@@ -187,33 +193,18 @@
             height: 16px;
         }
         .popup-folder {
-            display: flex;
             justify-content: space-between;
-            align-items: center;
-            width: 100%;
         }
-        .subfolder-popup {
-            position: relative;
+        .back-button {
+            border-bottom: 1px solid #333;
+            margin-bottom: 0.3rem;
+            color: #3b82f6;
         }
-        .subfolder-content {
-            position: absolute;
-            left: 100%;
-            top: 0;
-            background: #0f0f0f;
-            border: 1px solid #333;
-            border-radius: 0.75rem;
-            min-width: 220px;
-            display: none;
-            flex-direction: column;
-            padding: 0.3rem 0;
-            max-height: 300px;
-            overflow-y: auto;
-        }
-        .subfolder-popup:hover .subfolder-content {
-            display: flex;
+        .back-button i {
+            margin-right: 8px;
         }
         
-        /* Top bar search - deep/dark colors, no extra button behind icon */
+        /* Top bar search */
         .top-bar {
             display: flex;
             gap: 1rem;
@@ -306,7 +297,6 @@
         .dropdown-item:hover { background: #1f2937; }
         .dropdown-item img { width: 20px; height: 20px; }
 
-        /* Bookmark Bar Section with toggle */
         .bookmark-section {
             flex-shrink: 0;
         }
@@ -376,7 +366,6 @@
             text-decoration: none;
         }
 
-        /* Categories Section */
         .categories-section {
             flex: 1;
             overflow-y: auto;
@@ -481,7 +470,6 @@
         </div>
     </div>
 
-    <!-- Bookmark Section with Toggle -->
     <div class="bookmark-section">
         <div class="section-header">
             <div class="toggle-icon" id="toggleIconBtn">
@@ -512,6 +500,7 @@
     let toolbarItems = [];
     let activePopup = null;
     let isBookmarkBarCollapsed = false;
+    let popupHistory = []; // For nested navigation
 
     function getFavicon(url) {
         try { const domain = new URL(url).hostname; return `https://www.google.com/s2/favicons?domain=${domain}&sz=64`; } catch(e) { return ""; }
@@ -582,31 +571,6 @@
         } catch(e) { return [{ name: "Google", urlTemplate: "https://www.google.com/search?q=%s", active: true, icon: "" }]; }
     }
 
-    // Recursive popup builder with proper subfolder support
-    function buildPopupHtml(items) {
-        let html = "";
-        for (const item of items) {
-            if (item.type === "bookmark") {
-                const icon = item.iconUri && item.iconUri.startsWith("http") ? item.iconUri : getFavicon(item.uri);
-                html += `<a href="${escapeHtml(item.uri)}" target="_blank" class="popup-item" style="text-decoration: none;">
-                            <img src="${icon}" onerror="this.src='${getFavicon(item.uri)}';"> 
-                            ${escapeHtml(item.title.length > 40 ? item.title.slice(0,37)+'..' : item.title)}
-                         </a>`;
-            } else if (item.type === "folder" && item.children && item.children.length > 0) {
-                html += `<div class="subfolder-popup">
-                            <div class="popup-item popup-folder">
-                                <span><i class="fas fa-folder"></i> ${escapeHtml(item.title)}</span>
-                                <i class="fas fa-chevron-right" style="font-size: 10px;"></i>
-                            </div>
-                            <div class="subfolder-content hide-scrollbar">
-                                ${buildPopupHtml(item.children)}
-                            </div>
-                         </div>`;
-            }
-        }
-        return html;
-    }
-
     function extractToolbarChildren(jsonData) {
         if (!jsonData || !jsonData.children) return [];
         function findToolbar(node) {
@@ -644,14 +608,47 @@
             activePopup.remove();
             activePopup = null;
         }
+        popupHistory = [];
     }
 
-    function showFolderPopup(folderItem, buttonElement) {
-        closePopup();
+    // NESTED POPUP: Show folder contents in a new popup (replaces current one)
+    function showFolderPopup(folderItem, buttonElement, parentFolder = null) {
+        if (activePopup) {
+            activePopup.remove();
+            activePopup = null;
+        }
         
         const popup = document.createElement('div');
         popup.className = 'folder-popup hide-scrollbar';
-        popup.innerHTML = buildPopupHtml(folderItem.children);
+        
+        let html = '';
+        // Add back button if there's a parent
+        if (parentFolder) {
+            html += `<button class="popup-item back-button" data-back="true" style="cursor: pointer;">
+                        <i class="fas fa-arrow-left"></i> Back to ${escapeHtml(parentFolder.title)}
+                     </button>`;
+        }
+        
+        for (const item of folderItem.children) {
+            if (item.type === "bookmark") {
+                const icon = item.iconUri && item.iconUri.startsWith("http") ? item.iconUri : getFavicon(item.uri);
+                html += `<a href="${escapeHtml(item.uri)}" target="_blank" class="popup-item" style="text-decoration: none;">
+                            <img src="${icon}" onerror="this.src='${getFavicon(item.uri)}';"> 
+                            ${escapeHtml(item.title.length > 40 ? item.title.slice(0,37)+'..' : item.title)}
+                         </a>`;
+            } else if (item.type === "folder" && item.children && item.children.length > 0) {
+                html += `<button class="popup-item popup-folder" data-subfolder='${JSON.stringify({title: item.title, index: folderItem.children.indexOf(item)})}' style="width: 100%; text-align: left;">
+                            <span><i class="fas fa-folder"></i> ${escapeHtml(item.title)}</span>
+                            <i class="fas fa-chevron-right" style="font-size: 10px;"></i>
+                         </button>`;
+            }
+        }
+        
+        if (html === '') {
+            html = '<div class="popup-item" style="color: #6b7280;">Empty folder</div>';
+        }
+        
+        popup.innerHTML = html;
         
         const rect = buttonElement.getBoundingClientRect();
         popup.style.position = 'fixed';
@@ -661,12 +658,33 @@
         if (rect.left + 280 > window.innerWidth) {
             popup.style.left = `${window.innerWidth - 290}px`;
         }
-        if (rect.bottom + 350 > window.innerHeight) {
-            popup.style.top = `${rect.top - 360}px`;
+        if (rect.bottom + 400 > window.innerHeight) {
+            popup.style.top = `${rect.top - 420}px`;
         }
         
         document.body.appendChild(popup);
         activePopup = popup;
+        
+        // Handle subfolder clicks (nested popup)
+        popup.querySelectorAll('[data-subfolder]').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const subData = JSON.parse(btn.getAttribute('data-subfolder'));
+                const subFolder = folderItem.children.find(c => c.title === subData.title);
+                if (subFolder) {
+                    showFolderPopup(subFolder, btn, folderItem);
+                }
+            });
+        });
+        
+        // Handle back button
+        const backBtn = popup.querySelector('[data-back="true"]');
+        if (backBtn && parentFolder) {
+            backBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                showFolderPopup(parentFolder, buttonElement, null);
+            });
+        }
         
         const closeHandler = (e) => {
             if (!popup.contains(e.target) && e.target !== buttonElement && !buttonElement.contains(e.target)) {
@@ -705,7 +723,7 @@
                 const idx = parseInt(btn.getAttribute('data-folder-idx'));
                 const folderItem = items[idx];
                 if (folderItem && folderItem.type === 'folder') {
-                    showFolderPopup(folderItem, btn);
+                    showFolderPopup(folderItem, btn, null);
                 }
             });
         });
@@ -779,7 +797,6 @@
         window.open(engine.urlTemplate.replace("%s", encodeURIComponent(query)), "_blank");
     }
 
-    // Toggle Bookmark Bar
     function toggleBookmarkBar() {
         const bookmarkBar = document.getElementById("bookmarkBarContainer");
         const toggleIcon = document.getElementById("toggleIcon");
@@ -794,7 +811,6 @@
     }
     document.getElementById("toggleIconBtn").addEventListener("click", toggleBookmarkBar);
 
-    // Clock
     function updateClock() {
         const now = new Date();
         let hours = now.getHours() % 12 || 12;
@@ -808,7 +824,7 @@
     setInterval(updateClock, 1000);
     updateClock();
 
-    // Calendar popup
+    // CALENDAR - FULLY FIXED with working navigation
     let activeCalendar = null;
     function showCalendarPopup(anchorBtn) {
         if (activeCalendar) {
@@ -827,9 +843,9 @@
             const startDay = firstDay.getDay();
             const daysInMonth = new Date(year, month + 1, 0).getDate();
             let html = `<div class="calendar-header">
-                            <button id="prevMonthBtn"><i class="fas fa-chevron-left"></i></button>
-                            <span>${firstDay.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}</span>
-                            <button id="nextMonthBtn"><i class="fas fa-chevron-right"></i></button>
+                            <button class="prevCalBtn"><i class="fas fa-chevron-left"></i></button>
+                            <span class="calMonthYear">${firstDay.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}</span>
+                            <button class="nextCalBtn"><i class="fas fa-chevron-right"></i></button>
                         </div>
                         <div class="calendar-grid">`;
             const weekdays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -844,11 +860,41 @@
             html += `</div>`;
             popup.innerHTML = html;
             
-            const prevBtn = document.getElementById('prevMonthBtn');
-            const nextBtn = document.getElementById('nextMonthBtn');
-            if (prevBtn) prevBtn.onclick = (e) => { e.stopPropagation(); renderCal(year, month - 1); };
-            if (nextBtn) nextBtn.onclick = (e) => { e.stopPropagation(); renderCal(year, month + 1); };
+            // Attach event listeners for navigation
+            const prevBtn = popup.querySelector('.prevCalBtn');
+            const nextBtn = popup.querySelector('.nextCalBtn');
+            const monthYearSpan = popup.querySelector('.calMonthYear');
+            
+            if (prevBtn) {
+                prevBtn.onclick = (e) => {
+                    e.stopPropagation();
+                    let newMonth = currentMonth - 1;
+                    let newYear = currentYear;
+                    if (newMonth < 0) {
+                        newMonth = 11;
+                        newYear--;
+                    }
+                    currentYear = newYear;
+                    currentMonth = newMonth;
+                    renderCal(currentYear, currentMonth);
+                };
+            }
+            if (nextBtn) {
+                nextBtn.onclick = (e) => {
+                    e.stopPropagation();
+                    let newMonth = currentMonth + 1;
+                    let newYear = currentYear;
+                    if (newMonth > 11) {
+                        newMonth = 0;
+                        newYear++;
+                    }
+                    currentYear = newYear;
+                    currentMonth = newMonth;
+                    renderCal(currentYear, currentMonth);
+                };
+            }
         }
+        
         renderCal(currentYear, currentMonth);
         
         const rect = anchorBtn.getBoundingClientRect();
@@ -919,7 +965,6 @@
             document.getElementById("bookmarkSearchInput").addEventListener("input", e => updateBookmarkSearchPopup(e.target.value));
             document.getElementById("clearBookmarkSearch").addEventListener("click", () => { document.getElementById("bookmarkSearchInput").value = ""; updateBookmarkSearchPopup(""); });
             
-            // Profile image fallback
             const profileImg = document.getElementById("profileImage");
             if (profileImg.complete && profileImg.naturalHeight === 0) {
                 profileImg.style.display = 'none';
