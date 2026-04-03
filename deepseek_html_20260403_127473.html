@@ -1,0 +1,682 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Nexus · Custom Start Page</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%23000000' rx='20'/%3E%3Cpath fill='%233b82f6' d='M30 25h40a5 5 0 0 1 5 5v40a5 5 0 0 1-5 5H30a5 5 0 0 1-5-5V30a5 5 0 0 1 5-5zm5 10v30h30V35H35z'/%3E%3C/svg%3E">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background: #000000;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            color: #e5e7eb;
+            height: 100vh;
+            overflow: hidden;
+        }
+        .app {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            padding: 1rem 1.5rem;
+            gap: 1rem;
+            overflow: hidden;
+        }
+        /* Top bar */
+        .top-bar {
+            display: flex;
+            gap: 1rem;
+            flex-shrink: 0;
+        }
+        .search-engine-wrapper, .bookmark-search-wrapper {
+            flex: 1;
+            position: relative;
+        }
+        .search-container {
+            display: flex;
+            align-items: center;
+            background: #111111;
+            border: 1px solid #2a2a2a;
+            border-radius: 2.5rem;
+            padding: 0.5rem;
+            transition: all 0.2s;
+        }
+        .search-container:focus-within {
+            border-color: #3b82f6;
+            background: #0a0a0a;
+        }
+        .engine-icon-btn {
+            background: #1f2937;
+            border: none;
+            border-radius: 2rem;
+            padding: 0.5rem 1rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            color: white;
+            transition: 0.2s;
+        }
+        .engine-icon-btn:hover { background: #374151; }
+        .engine-icon-btn img { width: 18px; height: 18px; border-radius: 4px; }
+        .search-container input {
+            flex: 1;
+            background: transparent;
+            border: none;
+            color: white;
+            font-size: 0.9rem;
+            padding: 0.6rem 0.8rem;
+            outline: none;
+        }
+        .search-container input::placeholder { color: #4b5563; }
+        .search-container button {
+            background: #2563eb;
+            border: none;
+            color: white;
+            padding: 0.45rem 1.2rem;
+            border-radius: 2rem;
+            font-size: 0.8rem;
+            cursor: pointer;
+        }
+        /* Dropdowns */
+        .dropdown {
+            position: absolute;
+            top: 110%;
+            left: 0;
+            right: 0;
+            background: #0f0f0f;
+            border: 1px solid #2c2c2c;
+            border-radius: 1rem;
+            z-index: 200;
+            max-height: 280px;
+            overflow-y: auto;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+        }
+        .dropdown-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 0.7rem 1rem;
+            cursor: pointer;
+            transition: 0.1s;
+            border-bottom: 1px solid #1e1e1e;
+            text-decoration: none;
+            color: #e5e7eb;
+        }
+        .dropdown-item:hover { background: #1f2937; }
+        .dropdown-item img { width: 20px; height: 20px; }
+
+        /* Bookmark Bar - NO TILES, just clean folders */
+        .bookmark-bar {
+            background: transparent;
+            flex-shrink: 0;
+            padding: 0.5rem 0;
+        }
+        .bookmark-bar-inner {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.25rem;
+            align-items: center;
+        }
+        
+        /* Folder styles - clean and clickable */
+        .folder-wrapper {
+            position: relative;
+            display: inline-block;
+        }
+        .folder-button {
+            background: transparent;
+            border: none;
+            color: #e5e7eb;
+            padding: 0.5rem 1rem;
+            font-size: 0.85rem;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            border-radius: 0.5rem;
+            transition: 0.1s;
+        }
+        .folder-button:hover {
+            background: #1f2937;
+        }
+        .folder-button i {
+            color: #f59e0b;
+        }
+        
+        /* Dropdown menu for folders */
+        .folder-dropdown-menu {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            background: #0f0f0f;
+            border: 1px solid #333;
+            border-radius: 0.75rem;
+            min-width: 260px;
+            z-index: 1000;
+            display: none;
+            flex-direction: column;
+            padding: 0.5rem 0;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+        }
+        .folder-wrapper:hover .folder-dropdown-menu {
+            display: flex;
+        }
+        
+        /* Menu items */
+        .menu-item {
+            padding: 0.6rem 1rem;
+            color: #e5e7eb;
+            text-decoration: none;
+            font-size: 0.8rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+        }
+        .menu-item:hover {
+            background: #1f2937;
+        }
+        .menu-item img {
+            width: 16px;
+            height: 16px;
+        }
+        
+        /* Subfolder */
+        .subfolder-wrapper {
+            position: relative;
+        }
+        .subfolder-trigger {
+            padding: 0.6rem 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+        }
+        .subfolder-menu {
+            position: absolute;
+            left: 100%;
+            top: 0;
+            background: #0f0f0f;
+            border: 1px solid #333;
+            border-radius: 0.75rem;
+            min-width: 220px;
+            display: none;
+            flex-direction: column;
+            padding: 0.3rem 0;
+        }
+        .subfolder-wrapper:hover .subfolder-menu {
+            display: flex;
+        }
+
+        /* Categories Section - App Drawer Style */
+        .categories-section {
+            flex: 1;
+            overflow-y: auto;
+            padding-right: 0.3rem;
+        }
+        .category-row {
+            margin-bottom: 2rem;
+        }
+        .category-title {
+            font-size: 1rem;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            color: #9ca3af;
+            margin-bottom: 1rem;
+            border-left: 3px solid #3b82f6;
+            padding-left: 0.7rem;
+        }
+        .app-drawer-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1.2rem;
+        }
+        /* Round square tile with name under icon */
+        .app-tile {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-decoration: none;
+            width: 85px;
+            transition: transform 0.15s ease;
+        }
+        .app-tile:hover {
+            transform: translateY(-3px);
+        }
+        .tile-icon {
+            width: 70px;
+            height: 70px;
+            background: #121212;
+            border-radius: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid #2c2c2c;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            transition: all 0.2s;
+        }
+        .app-tile:hover .tile-icon {
+            background: #1e1e2a;
+            border-color: #3b82f6;
+        }
+        .tile-icon img {
+            width: 38px;
+            height: 38px;
+            object-fit: contain;
+        }
+        .tile-name {
+            font-size: 0.7rem;
+            font-weight: 500;
+            margin-top: 0.5rem;
+            text-align: center;
+            max-width: 80px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            color: #bbbbbb;
+        }
+        .empty-cat {
+            color: #4b5563;
+            font-size: 0.85rem;
+            padding: 1rem;
+            text-align: center;
+        }
+
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #0a0a0a; }
+        ::-webkit-scrollbar-thumb { background: #333; border-radius: 5px; }
+    </style>
+</head>
+<body>
+<div class="app">
+    <div class="top-bar">
+        <div class="search-engine-wrapper">
+            <div class="search-container">
+                <button class="engine-icon-btn" id="engineSelectorBtn">
+                    <img id="currentEngineIcon" src="https://www.google.com/s2/favicons?domain=google.com" alt="">
+                    <span id="currentEngineName">Google</span>
+                    <i class="fas fa-chevron-down" style="font-size: 10px;"></i>
+                </button>
+                <input type="text" id="engineQueryInput" placeholder="Search the web...">
+                <button id="engineSearchBtn"><i class="fas fa-search"></i></button>
+            </div>
+            <div id="engineDropdown" class="dropdown" style="display: none;"></div>
+        </div>
+        <div class="bookmark-search-wrapper">
+            <div class="search-container">
+                <i class="fas fa-bookmark" style="margin-left: 0.8rem; color: #6b7280;"></i>
+                <input type="text" id="bookmarkSearchInput" placeholder="Search bookmarks...">
+                <button id="clearBookmarkSearch"><i class="fas fa-times"></i></button>
+            </div>
+            <div id="bookmarkSearchDropdown" class="dropdown" style="display: none;"></div>
+        </div>
+    </div>
+
+    <!-- Bookmark Bar - Clean folder list -->
+    <div class="bookmark-bar" id="bookmarkBarContainer">
+        <div class="bookmark-bar-inner">Loading bookmarks...</div>
+    </div>
+
+    <!-- Categories Section - App drawer tiles -->
+    <div class="categories-section" id="categoriesContainer">
+        <div style="text-align: center; padding: 2rem;"><i class="fas fa-spinner fa-pulse"></i> Loading categories...</div>
+    </div>
+</div>
+
+<script>
+    const CSV_BOOKMARKS_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSxVk_HHPGsnAkM1qeSshRjzRXQ7BhKbk2OFTy-nurrhUQSCd7lz3LFOahHU_nqYd9OIxIu5wkzXEZZ/pub?gid=26452786&single=true&output=csv";
+    const SEARCH_ENGINES_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSxVk_HHPGsnAkM1qeSshRjzRXQ7BhKbk2OFTy-nurrhUQSCd7lz3LFOahHU_nqYd9OIxIu5wkzXEZZ/pub?gid=1271015321&single=true&output=csv";
+    const JSON_BOOKMARKS_URL = "https://raw.githubusercontent.com/shafin-protic/Web_Bookmarks/refs/heads/main/Web_Bookmarks.json";
+
+    let csvCategoryBookmarks = [];
+    let searchEngines = [];
+    let currentEngine = null;
+    let allBookmarksForSearch = [];
+
+    function getFavicon(url) {
+        try { const domain = new URL(url).hostname; return `https://www.google.com/s2/favicons?domain=${domain}&sz=64`; } catch(e) { return ""; }
+    }
+    function escapeHtml(str) { 
+        if (!str) return '';
+        return str.replace(/[&<>]/g, function(m){
+            if(m==='&') return '&amp;';
+            if(m==='<') return '&lt;';
+            if(m==='>') return '&gt;';
+            return m;
+        });
+    }
+
+    async function fetchCSV(url) {
+        const res = await fetch(url);
+        const text = await res.text();
+        const rows = text.split(/\r?\n/).filter(l => l.trim());
+        return rows.map(row => {
+            const regex = /(".*?"|[^,]*)(,|$)/g;
+            const cols = [];
+            let match;
+            while ((match = regex.exec(row)) !== null) {
+                let val = match[1];
+                if (val.startsWith('"') && val.endsWith('"')) val = val.slice(1, -1);
+                cols.push(val.trim());
+                if (match[2] !== ",") break;
+            }
+            return cols;
+        });
+    }
+
+    async function loadCsvCategoryBookmarks() {
+        try {
+            const rows = await fetchCSV(CSV_BOOKMARKS_URL);
+            if (rows.length < 2) return [];
+            const data = [];
+            for (let i = 1; i < rows.length; i++) {
+                const row = rows[i];
+                if (row.length < 3) continue;
+                const name = row[0];
+                const url = row[1];
+                const category = row[2] || "Uncategorized";
+                const icon = row[3] || "";
+                if (name && url && url.startsWith("http")) {
+                    data.push({ name: name, url: url, category: category.trim(), icon: icon });
+                }
+            }
+            return data;
+        } catch(e) { console.error(e); return []; }
+    }
+
+    async function loadSearchEngines() {
+        try {
+            const rows = await fetchCSV(SEARCH_ENGINES_URL);
+            if (rows.length < 2) return [];
+            const engines = [];
+            for (let i = 1; i < rows.length; i++) {
+                const row = rows[i];
+                if (row.length < 3) continue;
+                const name = row[0];
+                let urlTemplate = row[1];
+                const useIt = row[2]?.toLowerCase();
+                let icon = row[3] || "";
+                if (urlTemplate && !urlTemplate.includes("%s")) {
+                    urlTemplate += urlTemplate.includes("?") ? "&q=%s" : "?q=%s";
+                }
+                const active = (useIt === "yes" || useIt === "y" || useIt === "true");
+                engines.push({ name, urlTemplate, active, icon });
+            }
+            if (engines.length === 0) {
+                engines.push({ name: "Google", urlTemplate: "https://www.google.com/search?q=%s", active: true, icon: "" });
+            }
+            return engines;
+        } catch(e) { return [{ name: "Google", urlTemplate: "https://www.google.com/search?q=%s", active: true, icon: "" }]; }
+    }
+
+    // Recursive menu builder
+    function buildMenuHtml(items) {
+        let html = "";
+        for (const item of items) {
+            if (item.type === "bookmark") {
+                const icon = item.iconUri && item.iconUri.startsWith("http") ? item.iconUri : getFavicon(item.uri);
+                html += `<a href="${escapeHtml(item.uri)}" target="_blank" class="menu-item">
+                            <img src="${icon}" onerror="this.src='${getFavicon(item.uri)}';"> 
+                            ${escapeHtml(item.title.length > 35 ? item.title.slice(0,32)+'..' : item.title)}
+                         </a>`;
+            } else if (item.type === "folder" && item.children && item.children.length > 0) {
+                html += `<div class="subfolder-wrapper">
+                            <div class="subfolder-trigger menu-item">
+                                <span><i class="fas fa-folder"></i> ${escapeHtml(item.title)}</span>
+                                <i class="fas fa-chevron-right" style="font-size: 10px;"></i>
+                            </div>
+                            <div class="subfolder-menu">${buildMenuHtml(item.children)}</div>
+                         </div>`;
+            }
+        }
+        return html;
+    }
+
+    function extractToolbarChildren(jsonData) {
+        if (!jsonData || !jsonData.children) return [];
+        function findToolbar(node) {
+            if (node.root === "toolbarFolder") return node.children;
+            if (node.children) {
+                for (const c of node.children) {
+                    const found = findToolbar(c);
+                    if (found) return found;
+                }
+            }
+            return null;
+        }
+        const toolbar = findToolbar(jsonData);
+        return toolbar || [];
+    }
+
+    function convertNode(node) {
+        if (!node) return null;
+        const item = {
+            title: node.title || "",
+            type: node.typeCode === 2 ? "folder" : (node.typeCode === 1 ? "bookmark" : null),
+            uri: node.uri,
+            children: [],
+            iconUri: node.iconUri
+        };
+        if (item.type === "folder" && node.children) {
+            for (const child of node.children) {
+                const converted = convertNode(child);
+                if (converted && ((converted.type === "bookmark" && converted.uri) || (converted.type === "folder" && converted.children.length > 0))) {
+                    item.children.push(converted);
+                }
+            }
+            return item;
+        }
+        if (item.type === "bookmark" && item.uri && item.uri.startsWith("http")) {
+            return item;
+        }
+        return null;
+    }
+
+    function flattenForSearch(items, arr = []) {
+        for (const item of items) {
+            if (item.type === "bookmark" && item.uri) {
+                arr.push({ name: item.title, url: item.uri, icon: item.iconUri });
+            }
+            if (item.children) {
+                flattenForSearch(item.children, arr);
+            }
+        }
+        return arr;
+    }
+
+    // Render bookmark bar - clean folders with proper dropdowns
+    function renderBookmarkBar(toolbarItems) {
+        const container = document.getElementById("bookmarkBarContainer");
+        if (!toolbarItems || toolbarItems.length === 0) {
+            container.innerHTML = '<div class="bookmark-bar-inner">No bookmarks in toolbar</div>';
+            return;
+        }
+        let html = '<div class="bookmark-bar-inner">';
+        for (const item of toolbarItems) {
+            if (item.type === "bookmark") {
+                const icon = item.iconUri && item.iconUri.startsWith("http") ? item.iconUri : getFavicon(item.uri);
+                html += `<a href="${escapeHtml(item.uri)}" target="_blank" class="folder-button" style="text-decoration: none;">
+                            <img src="${icon}" style="width: 14px; height: 14px;" onerror="this.src='${getFavicon(item.uri)}';"> 
+                            ${escapeHtml(item.title.length > 18 ? item.title.slice(0,15)+'..' : item.title)}
+                         </a>`;
+            } else if (item.type === "folder" && item.children && item.children.length > 0) {
+                html += `<div class="folder-wrapper">
+                            <button class="folder-button">
+                                <i class="fas fa-folder"></i> ${escapeHtml(item.title.length > 18 ? item.title.slice(0,15)+'..' : item.title)}
+                                <i class="fas fa-chevron-down" style="font-size: 9px;"></i>
+                            </button>
+                            <div class="folder-dropdown-menu">
+                                ${buildMenuHtml(item.children)}
+                            </div>
+                         </div>`;
+            }
+        }
+        html += '</div>';
+        container.innerHTML = html;
+    }
+
+    // Render categories as app drawer tiles
+    function renderCategories() {
+        const container = document.getElementById("categoriesContainer");
+        const categories = ["Cat A", "Cat B", "Cat C", "Cat D", "Cat E"];
+        const grouped = { "Cat A": [], "Cat B": [], "Cat C": [], "Cat D": [], "Cat E": [] };
+        
+        csvCategoryBookmarks.forEach(b => {
+            if (grouped[b.category]) {
+                grouped[b.category].push(b);
+            }
+        });
+        
+        let html = "";
+        let hasAny = false;
+        for (let cat of categories) {
+            const items = grouped[cat];
+            if (items.length === 0) continue;
+            hasAny = true;
+            html += `<div class="category-row">
+                        <div class="category-title">${cat}</div>
+                        <div class="app-drawer-grid">`;
+            items.forEach(item => {
+                const iconUrl = (item.icon && item.icon.startsWith("http")) ? item.icon : getFavicon(item.url);
+                html += `<a href="${escapeHtml(item.url)}" target="_blank" class="app-tile">
+                            <div class="tile-icon">
+                                <img src="${iconUrl}" onerror="this.src='${getFavicon(item.url)}';">
+                            </div>
+                            <span class="tile-name">${escapeHtml(item.name.length > 14 ? item.name.slice(0,12)+'..' : item.name)}</span>
+                         </a>`;
+            });
+            html += `</div></div>`;
+        }
+        if (!hasAny) {
+            html = '<div class="empty-cat">No categories found. Make sure column 3 has "Cat A", "Cat B", etc.</div>';
+        }
+        container.innerHTML = html;
+    }
+
+    // Bookmark search popup
+    function updateBookmarkSearchPopup(query) {
+        const dropdown = document.getElementById("bookmarkSearchDropdown");
+        if (!query.trim()) { dropdown.style.display = "none"; return; }
+        const lowerQuery = query.toLowerCase();
+        const matches = allBookmarksForSearch.filter(b => b.name.toLowerCase().includes(lowerQuery));
+        if (matches.length === 0) { dropdown.style.display = "none"; return; }
+        let html = "";
+        matches.slice(0, 15).forEach(b => {
+            const icon = getFavicon(b.url);
+            html += `<a href="${escapeHtml(b.url)}" target="_blank" class="dropdown-item">
+                        <img src="${icon}" onerror="this.src='${getFavicon(b.url)}';"> 
+                        ${escapeHtml(b.name.length > 50 ? b.name.slice(0,47)+'..' : b.name)}
+                     </a>`;
+        });
+        dropdown.innerHTML = html;
+        dropdown.style.display = "block";
+    }
+
+    function renderEngineDropdown() {
+        const dropdown = document.getElementById("engineDropdown");
+        let html = "";
+        searchEngines.forEach(eng => {
+            const icon = eng.icon && eng.icon.startsWith("http") ? eng.icon : getFavicon(eng.urlTemplate);
+            html += `<div class="dropdown-item" data-engine-name="${escapeHtml(eng.name)}">
+                        <img src="${icon}" onerror="this.src='${getFavicon(eng.urlTemplate)}';"> 
+                        ${eng.name} ${eng.active ? "✓" : ""}
+                     </div>`;
+        });
+        dropdown.innerHTML = html;
+        document.querySelectorAll("#engineDropdown .dropdown-item").forEach(el => {
+            el.addEventListener("click", () => {
+                const name = el.getAttribute("data-engine-name");
+                const engine = searchEngines.find(e => e.name === name);
+                if (engine) {
+                    searchEngines.forEach(e => e.active = false);
+                    engine.active = true;
+                    currentEngine = engine;
+                    updateEngineUI();
+                    dropdown.style.display = "none";
+                }
+            });
+        });
+    }
+
+    function updateEngineUI() {
+        currentEngine = searchEngines.find(e => e.active) || searchEngines[0];
+        if (currentEngine) {
+            const iconUrl = currentEngine.icon && currentEngine.icon.startsWith("http") ? currentEngine.icon : getFavicon(currentEngine.urlTemplate);
+            document.getElementById("currentEngineIcon").src = iconUrl;
+            document.getElementById("currentEngineName").innerText = currentEngine.name.length > 12 ? currentEngine.name.slice(0,10)+'..' : currentEngine.name;
+        }
+    }
+
+    function performSearch() {
+        const query = document.getElementById("engineQueryInput").value;
+        if (!query.trim()) return;
+        const engine = currentEngine || searchEngines[0];
+        const url = engine.urlTemplate.replace("%s", encodeURIComponent(query));
+        window.open(url, "_blank");
+    }
+
+    async function init() {
+        try {
+            csvCategoryBookmarks = await loadCsvCategoryBookmarks();
+            renderCategories();
+
+            searchEngines = await loadSearchEngines();
+            if (!searchEngines.some(e => e.active)) searchEngines[0].active = true;
+            currentEngine = searchEngines.find(e => e.active);
+            updateEngineUI();
+            renderEngineDropdown();
+
+            const jsonRes = await fetch(JSON_BOOKMARKS_URL);
+            const jsonData = await jsonRes.json();
+            
+            const toolbarRawChildren = extractToolbarChildren(jsonData);
+            const toolbarItems = [];
+            for (const child of toolbarRawChildren) {
+                const converted = convertNode(child);
+                if (converted) toolbarItems.push(converted);
+            }
+            
+            renderBookmarkBar(toolbarItems);
+            
+            const allJsonItems = [];
+            function collectAll(node) {
+                if (node.type === "bookmark" && node.uri) {
+                    allJsonItems.push({ name: node.title, url: node.uri, icon: node.iconUri });
+                }
+                if (node.children) {
+                    node.children.forEach(collectAll);
+                }
+            }
+            for (const item of toolbarItems) collectAll(item);
+            allBookmarksForSearch = allJsonItems;
+            
+            const engineBtn = document.getElementById("engineSelectorBtn");
+            const engineDropdownDiv = document.getElementById("engineDropdown");
+            engineBtn.addEventListener("click", (e) => {
+                e.stopPropagation();
+                engineDropdownDiv.style.display = engineDropdownDiv.style.display === "none" ? "block" : "none";
+            });
+            document.addEventListener("click", (e) => {
+                if (!engineBtn.contains(e.target) && !engineDropdownDiv.contains(e.target)) 
+                    engineDropdownDiv.style.display = "none";
+                if (!document.querySelector(".bookmark-search-wrapper").contains(e.target)) 
+                    document.getElementById("bookmarkSearchDropdown").style.display = "none";
+            });
+            document.getElementById("engineSearchBtn").addEventListener("click", performSearch);
+            document.getElementById("engineQueryInput").addEventListener("keypress", (e) => { if (e.key === "Enter") performSearch(); });
+            const bookmarkSearch = document.getElementById("bookmarkSearchInput");
+            bookmarkSearch.addEventListener("input", (e) => updateBookmarkSearchPopup(e.target.value));
+            document.getElementById("clearBookmarkSearch").addEventListener("click", () => { bookmarkSearch.value = ""; updateBookmarkSearchPopup(""); });
+            
+        } catch(err) {
+            console.error(err);
+            document.getElementById("categoriesContainer").innerHTML = `<div style="color:red; padding:1rem;">Error: ${err.message}</div>`;
+        }
+    }
+    init();
+</script>
+</body>
+</html>
