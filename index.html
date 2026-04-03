@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>Shafin's Space</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%23000000' rx='20'/%3E%3Cpath fill='%233b82f6' d='M30 25h40a5 5 0 0 1 5 5v40a5 5 0 0 1-5 5H30a5 5 0 0 1-5-5V30a5 5 0 0 1 5-5zm5 10v30h30V35H35z'/%3E%3C/svg%3E">
     <style>
         * {
             margin: 0;
@@ -36,12 +35,25 @@
             overflow: hidden;
         }
         
-        /* Header */
+        /* Header with profile image */
         .header-row {
             display: flex;
             justify-content: space-between;
             align-items: center;
             flex-shrink: 0;
+        }
+        .title-section {
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+        }
+        .profile-img {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            object-fit: cover;
+            background: #1f2937;
+            border: 2px solid #3b82f6;
         }
         .page-title h1 {
             font-size: 1.6rem;
@@ -142,7 +154,7 @@
         .friday-sat { color: #ef4444; }
         .current-day { background: #3b82f6; }
         
-        /* Folder Popup */
+        /* Folder Popup - improved subfolder support */
         .folder-popup {
             position: fixed;
             background: #0f0f0f;
@@ -178,6 +190,7 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
+            width: 100%;
         }
         .subfolder-popup {
             position: relative;
@@ -193,12 +206,14 @@
             display: none;
             flex-direction: column;
             padding: 0.3rem 0;
+            max-height: 300px;
+            overflow-y: auto;
         }
         .subfolder-popup:hover .subfolder-content {
             display: flex;
         }
         
-        /* Top bar search */
+        /* Top bar search - deep/dark colors, no extra button behind icon */
         .top-bar {
             display: flex;
             gap: 1rem;
@@ -211,7 +226,7 @@
         .search-container {
             display: flex;
             align-items: center;
-            background: #111111;
+            background: #0a0a0a;
             border: 1px solid #2a2a2a;
             border-radius: 2.5rem;
             padding: 0.3rem 0.5rem;
@@ -219,21 +234,22 @@
         }
         .search-container:focus-within {
             border-color: #3b82f6;
-            background: #0a0a0a;
+            background: #050505;
         }
-        .engine-icon-btn {
-            background: #1f2937;
-            border: none;
-            border-radius: 2rem;
-            padding: 0.4rem 0.8rem;
-            cursor: pointer;
+        .engine-icon-display {
+            background: transparent;
+            margin-left: 0.5rem;
+            margin-right: 0.2rem;
             display: flex;
             align-items: center;
             justify-content: center;
-            transition: 0.2s;
+            cursor: pointer;
         }
-        .engine-icon-btn:hover { background: #374151; }
-        .engine-icon-btn img { width: 20px; height: 20px; border-radius: 4px; }
+        .engine-icon-display img {
+            width: 20px;
+            height: 20px;
+            border-radius: 4px;
+        }
         .search-container input {
             flex: 1;
             background: transparent;
@@ -245,7 +261,7 @@
         }
         .search-container input::placeholder { color: #4b5563; }
         .search-engine-wrapper .search-container button {
-            background: #10b981;
+            background: #0d9488;
             border: none;
             color: white;
             padding: 0.4rem 1rem;
@@ -253,9 +269,9 @@
             font-size: 0.75rem;
             cursor: pointer;
         }
-        .search-engine-wrapper .search-container button:hover { background: #059669; }
+        .search-engine-wrapper .search-container button:hover { background: #0f766e; }
         .bookmark-search-wrapper .search-container button {
-            background: #3b82f6;
+            background: #1d4ed8;
             border: none;
             color: white;
             padding: 0.4rem 1rem;
@@ -263,7 +279,7 @@
             font-size: 0.75rem;
             cursor: pointer;
         }
-        .bookmark-search-wrapper .search-container button:hover { background: #2563eb; }
+        .bookmark-search-wrapper .search-container button:hover { background: #1e40af; }
         
         .dropdown {
             position: absolute;
@@ -299,7 +315,6 @@
             align-items: center;
             gap: 0.5rem;
             margin-bottom: 0.3rem;
-            cursor: pointer;
         }
         .toggle-icon {
             background: #1f2937;
@@ -312,6 +327,7 @@
             font-size: 0.7rem;
             color: #9ca3af;
             transition: 0.2s;
+            cursor: pointer;
         }
         .toggle-icon:hover {
             background: #374151;
@@ -321,6 +337,7 @@
             font-size: 0.7rem;
             color: #6b7280;
             letter-spacing: 0.5px;
+            cursor: default;
         }
         .bookmark-bar {
             background: transparent;
@@ -425,7 +442,13 @@
 <body>
 <div class="app">
     <div class="header-row">
-        <div class="page-title"><h1>Shafin's Space</h1></div>
+        <div class="title-section">
+            <img class="profile-img" id="profileImage" src="https://i.postimg.cc/yYbyhL4w/Rounded-Profile.png" alt="Profile" onerror="this.onerror=null; this.style.display='none'; document.getElementById('fallbackIcon').style.display='flex';">
+            <div id="fallbackIcon" style="display: none; width: 40px; height: 40px; border-radius: 50%; background: #3b82f6; align-items: center; justify-content: center;">
+                <i class="fas fa-user" style="color: white; font-size: 1.2rem;"></i>
+            </div>
+            <div class="page-title"><h1>Shafin's Space</h1></div>
+        </div>
         <div class="header-right">
             <button class="icon-btn" id="editSheetBtn" title="Edit Google Sheet"><i class="fas fa-pen"></i></button>
             <button class="icon-btn" id="refreshCsvBtn" title="Refresh Categories"><i class="fas fa-sync-alt"></i></button>
@@ -440,9 +463,9 @@
     <div class="top-bar">
         <div class="search-engine-wrapper">
             <div class="search-container">
-                <button class="engine-icon-btn" id="engineSelectorBtn">
+                <div class="engine-icon-display" id="engineSelectorBtn">
                     <img id="currentEngineIcon" src="https://www.google.com/s2/favicons?domain=google.com" alt="">
-                </button>
+                </div>
                 <input type="text" id="engineQueryInput" placeholder="Search the web...">
                 <button id="engineSearchBtn"><i class="fas fa-search"></i></button>
             </div>
@@ -460,7 +483,7 @@
 
     <!-- Bookmark Section with Toggle -->
     <div class="bookmark-section">
-        <div class="section-header" id="toggleBookmarkSection">
+        <div class="section-header">
             <div class="toggle-icon" id="toggleIconBtn">
                 <i class="fas fa-chevron-up" id="toggleIcon"></i>
             </div>
@@ -559,6 +582,7 @@
         } catch(e) { return [{ name: "Google", urlTemplate: "https://www.google.com/search?q=%s", active: true, icon: "" }]; }
     }
 
+    // Recursive popup builder with proper subfolder support
     function buildPopupHtml(items) {
         let html = "";
         for (const item of items) {
@@ -574,7 +598,7 @@
                                 <span><i class="fas fa-folder"></i> ${escapeHtml(item.title)}</span>
                                 <i class="fas fa-chevron-right" style="font-size: 10px;"></i>
                             </div>
-                            <div class="subfolder-content hide-scrollbar" style="max-height: 300px; overflow-y: auto;">
+                            <div class="subfolder-content hide-scrollbar">
                                 ${buildPopupHtml(item.children)}
                             </div>
                          </div>`;
@@ -636,6 +660,9 @@
         
         if (rect.left + 280 > window.innerWidth) {
             popup.style.left = `${window.innerWidth - 290}px`;
+        }
+        if (rect.bottom + 350 > window.innerHeight) {
+            popup.style.top = `${rect.top - 360}px`;
         }
         
         document.body.appendChild(popup);
@@ -765,7 +792,7 @@
             toggleIcon.className = "fas fa-chevron-up";
         }
     }
-    document.getElementById("toggleBookmarkSection").addEventListener("click", toggleBookmarkBar);
+    document.getElementById("toggleIconBtn").addEventListener("click", toggleBookmarkBar);
 
     // Clock
     function updateClock() {
@@ -781,7 +808,7 @@
     setInterval(updateClock, 1000);
     updateClock();
 
-    // Calendar popup - FIXED
+    // Calendar popup
     let activeCalendar = null;
     function showCalendarPopup(anchorBtn) {
         if (activeCalendar) {
@@ -891,6 +918,13 @@
             });
             document.getElementById("bookmarkSearchInput").addEventListener("input", e => updateBookmarkSearchPopup(e.target.value));
             document.getElementById("clearBookmarkSearch").addEventListener("click", () => { document.getElementById("bookmarkSearchInput").value = ""; updateBookmarkSearchPopup(""); });
+            
+            // Profile image fallback
+            const profileImg = document.getElementById("profileImage");
+            if (profileImg.complete && profileImg.naturalHeight === 0) {
+                profileImg.style.display = 'none';
+                document.getElementById('fallbackIcon').style.display = 'flex';
+            }
         } catch(err) { console.error(err); document.getElementById("categoriesContainer").innerHTML = `<div class="empty-cat">Error: ${err.message}</div>`; }
     }
     init();
