@@ -7,7 +7,11 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%23000000' rx='20'/%3E%3Cpath fill='%233b82f6' d='M30 25h40a5 5 0 0 1 5 5v40a5 5 0 0 1-5 5H30a5 5 0 0 1-5-5V30a5 5 0 0 1 5-5zm5 10v30h30V35H35z'/%3E%3C/svg%3E">
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
         body {
             background: #000000;
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -15,28 +19,186 @@
             height: 100vh;
             overflow: hidden;
         }
+        .hide-scrollbar {
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+        }
+        .hide-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        
         .app {
             display: flex;
             flex-direction: column;
             height: 100vh;
             padding: 1rem 1.5rem;
-            gap: 1rem;
+            gap: 0.8rem;
             overflow: hidden;
         }
+        
         /* Header */
-        .page-header {
+        .header-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
             flex-shrink: 0;
-            margin-bottom: -0.25rem;
         }
-        .page-header h1 {
-            font-size: 1.5rem;
-            font-weight: 600;
-            background: linear-gradient(135deg, #ffffff, #3b82f6);
+        .page-title h1 {
+            font-size: 1.6rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #ff9999, #ffdd99, #ffcc99, #ff9999);
+            background-size: 300% auto;
             -webkit-background-clip: text;
             background-clip: text;
             color: transparent;
+            animation: titleShine 4s ease-in-out infinite;
+            letter-spacing: 1px;
         }
-        /* Top bar - side by side search */
+        @keyframes titleShine {
+            0% { background-position: 0% center; opacity: 0.9; }
+            50% { background-position: 100% center; opacity: 1; }
+            100% { background-position: 0% center; opacity: 0.9; }
+        }
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+            position: relative;
+        }
+        .clock-date {
+            text-align: right;
+        }
+        .clock {
+            font-size: 1.2rem;
+            font-weight: 600;
+            font-family: monospace;
+        }
+        .date {
+            font-size: 0.65rem;
+            color: #9ca3af;
+        }
+        .icon-btn {
+            background: #1f2937;
+            border: none;
+            border-radius: 50%;
+            width: 34px;
+            height: 34px;
+            cursor: pointer;
+            color: white;
+            font-size: 0.9rem;
+            transition: 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .icon-btn:hover {
+            background: #374151;
+            transform: scale(1.05);
+        }
+        
+        /* Calendar Popup */
+        .calendar-popup {
+            position: fixed;
+            background: #111;
+            border: 1px solid #333;
+            border-radius: 1rem;
+            padding: 1rem;
+            width: 300px;
+            z-index: 10001;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+        .calendar-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+        .calendar-header button {
+            background: #1f2937;
+            border: none;
+            padding: 0.3rem 0.8rem;
+            border-radius: 0.5rem;
+            color: white;
+            cursor: pointer;
+        }
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            text-align: center;
+            gap: 0.3rem;
+        }
+        .calendar-weekday {
+            font-size: 0.7rem;
+            color: #9ca3af;
+            padding: 0.3rem;
+        }
+        .calendar-day {
+            padding: 0.5rem;
+            font-size: 0.8rem;
+            cursor: pointer;
+            border-radius: 0.5rem;
+        }
+        .calendar-day:hover { background: #1f2937; }
+        .friday-sat { color: #ef4444; }
+        .current-day { background: #3b82f6; }
+        
+        /* Folder Popup */
+        .folder-popup {
+            position: fixed;
+            background: #0f0f0f;
+            border: 1px solid #333;
+            border-radius: 0.75rem;
+            min-width: 260px;
+            max-width: 320px;
+            max-height: 350px;
+            overflow-y: auto;
+            z-index: 1000;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+            padding: 0.5rem 0;
+        }
+        .popup-item {
+            padding: 0.6rem 1rem;
+            color: #e5e7eb;
+            text-decoration: none;
+            font-size: 0.8rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+            transition: 0.1s;
+        }
+        .popup-item:hover {
+            background: #1f2937;
+        }
+        .popup-item img {
+            width: 16px;
+            height: 16px;
+        }
+        .popup-folder {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .subfolder-popup {
+            position: relative;
+        }
+        .subfolder-content {
+            position: absolute;
+            left: 100%;
+            top: 0;
+            background: #0f0f0f;
+            border: 1px solid #333;
+            border-radius: 0.75rem;
+            min-width: 220px;
+            display: none;
+            flex-direction: column;
+            padding: 0.3rem 0;
+        }
+        .subfolder-popup:hover .subfolder-content {
+            display: flex;
+        }
+        
+        /* Top bar search */
         .top-bar {
             display: flex;
             gap: 1rem;
@@ -52,7 +214,7 @@
             background: #111111;
             border: 1px solid #2a2a2a;
             border-radius: 2.5rem;
-            padding: 0.5rem;
+            padding: 0.3rem 0.5rem;
             transition: all 0.2s;
         }
         .search-container:focus-within {
@@ -63,37 +225,46 @@
             background: #1f2937;
             border: none;
             border-radius: 2rem;
-            padding: 0.5rem 1rem;
+            padding: 0.4rem 0.8rem;
+            cursor: pointer;
             display: flex;
             align-items: center;
-            gap: 8px;
-            cursor: pointer;
-            font-size: 0.85rem;
-            color: white;
+            justify-content: center;
             transition: 0.2s;
         }
         .engine-icon-btn:hover { background: #374151; }
-        .engine-icon-btn img { width: 18px; height: 18px; border-radius: 4px; }
+        .engine-icon-btn img { width: 20px; height: 20px; border-radius: 4px; }
         .search-container input {
             flex: 1;
             background: transparent;
             border: none;
             color: white;
-            font-size: 0.9rem;
-            padding: 0.6rem 0.8rem;
+            font-size: 0.85rem;
+            padding: 0.5rem 0.8rem;
             outline: none;
         }
         .search-container input::placeholder { color: #4b5563; }
-        .search-container button {
-            background: #2563eb;
+        .search-engine-wrapper .search-container button {
+            background: #10b981;
             border: none;
             color: white;
-            padding: 0.45rem 1.2rem;
+            padding: 0.4rem 1rem;
             border-radius: 2rem;
-            font-size: 0.8rem;
+            font-size: 0.75rem;
             cursor: pointer;
         }
-        /* Dropdowns */
+        .search-engine-wrapper .search-container button:hover { background: #059669; }
+        .bookmark-search-wrapper .search-container button {
+            background: #3b82f6;
+            border: none;
+            color: white;
+            padding: 0.4rem 1rem;
+            border-radius: 2rem;
+            font-size: 0.75rem;
+            cursor: pointer;
+        }
+        .bookmark-search-wrapper .search-container button:hover { background: #2563eb; }
+        
         .dropdown {
             position: absolute;
             top: 110%;
@@ -105,7 +276,6 @@
             z-index: 200;
             max-height: 280px;
             overflow-y: auto;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
         }
         .dropdown-item {
             display: flex;
@@ -113,7 +283,6 @@
             gap: 12px;
             padding: 0.7rem 1rem;
             cursor: pointer;
-            transition: 0.1s;
             border-bottom: 1px solid #1e1e1e;
             text-decoration: none;
             color: #e5e7eb;
@@ -121,23 +290,53 @@
         .dropdown-item:hover { background: #1f2937; }
         .dropdown-item img { width: 20px; height: 20px; }
 
-        /* Bookmark Bar - COMPLETELY FREE, NO SCROLLBAR, WRAPS NATURALLY */
+        /* Bookmark Bar Section with toggle */
+        .bookmark-section {
+            flex-shrink: 0;
+        }
+        .section-header {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 0.3rem;
+            cursor: pointer;
+        }
+        .toggle-icon {
+            background: #1f2937;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.7rem;
+            color: #9ca3af;
+            transition: 0.2s;
+        }
+        .toggle-icon:hover {
+            background: #374151;
+            color: white;
+        }
+        .section-label {
+            font-size: 0.7rem;
+            color: #6b7280;
+            letter-spacing: 0.5px;
+        }
         .bookmark-bar {
             background: transparent;
-            flex-shrink: 0;
-            padding: 0.5rem 0;
+            transition: all 0.2s ease;
             overflow: visible;
-            max-height: none;
+        }
+        .bookmark-bar.collapsed {
+            display: none;
         }
         .bookmark-bar-inner {
             display: flex;
             flex-wrap: wrap;
             gap: 0.25rem;
             align-items: center;
-            overflow: visible;
         }
-        .folder-wrapper { position: relative; display: inline-block; }
-        .folder-button {
+        .folder-btn {
             background: transparent;
             border: none;
             color: #e5e7eb;
@@ -150,104 +349,51 @@
             border-radius: 0.5rem;
             transition: 0.1s;
         }
-        .folder-button:hover { background: #1f2937; }
-        .folder-button i { color: #f59e0b; }
-        .folder-dropdown-menu {
-            position: absolute;
-            top: 100%;
-            left: 0;
-            background: #0f0f0f;
-            border: 1px solid #333;
-            border-radius: 0.75rem;
-            min-width: 260px;
-            z-index: 1000;
-            display: none;
-            flex-direction: column;
-            padding: 0.5rem 0;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+        .folder-btn:hover {
+            background: #1f2937;
         }
-        .folder-wrapper:hover .folder-dropdown-menu { display: flex; }
-        .menu-item {
-            padding: 0.6rem 1rem;
-            color: #e5e7eb;
+        .folder-btn i {
+            color: #f59e0b;
+        }
+        .bookmark-link {
             text-decoration: none;
-            font-size: 0.8rem;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            cursor: pointer;
         }
-        .menu-item:hover { background: #1f2937; }
-        .menu-item img { width: 16px; height: 16px; }
-        .subfolder-wrapper { position: relative; }
-        .subfolder-trigger {
-            padding: 0.6rem 1rem;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            cursor: pointer;
-        }
-        .subfolder-menu {
-            position: absolute;
-            left: 100%;
-            top: 0;
-            background: #0f0f0f;
-            border: 1px solid #333;
-            border-radius: 0.75rem;
-            min-width: 220px;
-            display: none;
-            flex-direction: column;
-            padding: 0.3rem 0;
-        }
-        .subfolder-wrapper:hover .subfolder-menu { display: flex; }
 
-        /* Categories Section - Android App Drawer Style: ICON ONLY, NO ENVELOPE/TILE, text under icon */
+        /* Categories Section */
         .categories-section {
             flex: 1;
             overflow-y: auto;
-            padding-right: 0.3rem;
         }
         .category-row {
-            margin-bottom: 1.8rem;
+            margin-bottom: 1.5rem;
         }
         .category-title {
-            font-size: 0.9rem;
+            font-size: 0.85rem;
             font-weight: 600;
-            letter-spacing: 0.5px;
             color: #9ca3af;
-            margin-bottom: 0.8rem;
+            margin-bottom: 0.6rem;
             border-left: 3px solid #3b82f6;
             padding-left: 0.7rem;
         }
-        /* Horizontal row that shrinks dynamically - NO WRAP, NO SCROLL */
-        .app-drawer-row {
-            display: flex;
-            flex-wrap: nowrap;
-            gap: 1rem;
-            overflow-x: visible;
+        .equal-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(70px, 1fr));
+            gap: 0.8rem;
             width: 100%;
         }
-        /* Android-style app tile: NO BACKGROUND ENVELOPE, just icon above text */
         .clean-app-tile {
             display: flex;
             flex-direction: column;
             align-items: center;
             text-decoration: none;
-            min-width: 55px;
-            max-width: 80px;
-            flex: 1 1 0px;
-            transition: transform 0.15s ease;
+            transition: transform 0.15s;
             background: transparent;
-            padding: 0.2rem 0;
-            border-radius: 0;
+            padding: 0.3rem;
         }
-        .clean-app-tile:hover {
-            transform: translateY(-3px);
-        }
-        /* Direct icon - no square background */
+        .clean-app-tile:hover { transform: translateY(-3px); }
         .direct-icon {
-            width: 42px;
-            height: 42px;
+            width: 40px;
+            height: 40px;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -257,10 +403,9 @@
             width: 100%;
             height: 100%;
             object-fit: contain;
-            filter: drop-shadow(0 1px 2px rgba(0,0,0,0.3));
         }
         .clean-app-tile span {
-            font-size: 0.65rem;
+            font-size: 0.6rem;
             font-weight: 500;
             text-align: center;
             width: 100%;
@@ -275,22 +420,28 @@
             padding: 1rem;
             text-align: center;
         }
-        ::-webkit-scrollbar { width: 5px; height: 5px; }
-        ::-webkit-scrollbar-track { background: #0a0a0a; }
-        ::-webkit-scrollbar-thumb { background: #333; border-radius: 5px; }
     </style>
 </head>
 <body>
 <div class="app">
-    <div class="page-header"><h1>Shafin's Space</h1></div>
+    <div class="header-row">
+        <div class="page-title"><h1>Shafin's Space</h1></div>
+        <div class="header-right">
+            <button class="icon-btn" id="editSheetBtn" title="Edit Google Sheet"><i class="fas fa-pen"></i></button>
+            <button class="icon-btn" id="refreshCsvBtn" title="Refresh Categories"><i class="fas fa-sync-alt"></i></button>
+            <button class="icon-btn" id="calendarBtn" title="Calendar"><i class="fas fa-calendar-alt"></i></button>
+            <div class="clock-date">
+                <div class="clock" id="clockDisplay">--:--:--</div>
+                <div class="date" id="dateDisplay">Loading...</div>
+            </div>
+        </div>
+    </div>
     
     <div class="top-bar">
         <div class="search-engine-wrapper">
             <div class="search-container">
                 <button class="engine-icon-btn" id="engineSelectorBtn">
                     <img id="currentEngineIcon" src="https://www.google.com/s2/favicons?domain=google.com" alt="">
-                    <span id="currentEngineName">Google</span>
-                    <i class="fas fa-chevron-down" style="font-size: 10px;"></i>
                 </button>
                 <input type="text" id="engineQueryInput" placeholder="Search the web...">
                 <button id="engineSearchBtn"><i class="fas fa-search"></i></button>
@@ -307,40 +458,44 @@
         </div>
     </div>
 
-    <!-- Bookmark Bar - JSON folder structure (FREE, NO SCROLL) -->
-    <div class="bookmark-bar" id="bookmarkBarContainer">
-        <div class="bookmark-bar-inner">Loading bookmarks...</div>
+    <!-- Bookmark Section with Toggle -->
+    <div class="bookmark-section">
+        <div class="section-header" id="toggleBookmarkSection">
+            <div class="toggle-icon" id="toggleIconBtn">
+                <i class="fas fa-chevron-up" id="toggleIcon"></i>
+            </div>
+            <div class="section-label">BOOKMARK BAR</div>
+        </div>
+        <div class="bookmark-bar" id="bookmarkBarContainer">
+            <div class="bookmark-bar-inner">Loading bookmarks...</div>
+        </div>
     </div>
 
-    <!-- Categories Section - Android style: icon above text, NO ENVELOPE/TILE, clean -->
-    <div class="categories-section" id="categoriesContainer">
+    <div class="categories-section hide-scrollbar" id="categoriesContainer">
         <div style="text-align: center; padding: 2rem;"><i class="fas fa-spinner fa-pulse"></i> Loading categories...</div>
     </div>
 </div>
 
 <script>
-    // DATA SOURCES
     const CSV_BOOKMARKS_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSxVk_HHPGsnAkM1qeSshRjzRXQ7BhKbk2OFTy-nurrhUQSCd7lz3LFOahHU_nqYd9OIxIu5wkzXEZZ/pub?gid=26452786&single=true&output=csv";
     const SEARCH_ENGINES_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSxVk_HHPGsnAkM1qeSshRjzRXQ7BhKbk2OFTy-nurrhUQSCd7lz3LFOahHU_nqYd9OIxIu5wkzXEZZ/pub?gid=1271015321&single=true&output=csv";
     const JSON_BOOKMARKS_URL = "https://raw.githubusercontent.com/shafin-protic/Web_Bookmarks/refs/heads/main/Web_Bookmarks.json";
+    const EDIT_SHEET_URL = "https://docs.google.com/spreadsheets/d/1ErgYkvSzc1CtNPGYAjMV4TeQqMH6tEV-l7DPT6faBPQ/edit?usp=sharing";
 
     let csvCategoryBookmarks = [];
     let searchEngines = [];
     let currentEngine = null;
     let allBookmarksForSearch = [];
     let toolbarItems = [];
+    let activePopup = null;
+    let isBookmarkBarCollapsed = false;
 
     function getFavicon(url) {
         try { const domain = new URL(url).hostname; return `https://www.google.com/s2/favicons?domain=${domain}&sz=64`; } catch(e) { return ""; }
     }
     function escapeHtml(str) { 
         if (!str) return '';
-        return str.replace(/[&<>]/g, function(m){
-            if(m==='&') return '&amp;';
-            if(m==='<') return '&lt;';
-            if(m==='>') return '&gt;';
-            return m;
-        });
+        return str.replace(/[&<>]/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[m]));
     }
 
     async function fetchCSV(url) {
@@ -374,7 +529,7 @@
                 const category = row[2] || "Uncategorized";
                 const icon = row[3] || "";
                 if (name && url && url.startsWith("http")) {
-                    data.push({ name: name, url: url, category: category.trim(), icon: icon });
+                    data.push({ name, url, category: category.trim(), icon });
                 }
             }
             return data;
@@ -404,22 +559,24 @@
         } catch(e) { return [{ name: "Google", urlTemplate: "https://www.google.com/search?q=%s", active: true, icon: "" }]; }
     }
 
-    function buildMenuHtml(items) {
+    function buildPopupHtml(items) {
         let html = "";
         for (const item of items) {
             if (item.type === "bookmark") {
                 const icon = item.iconUri && item.iconUri.startsWith("http") ? item.iconUri : getFavicon(item.uri);
-                html += `<a href="${escapeHtml(item.uri)}" target="_blank" class="menu-item">
+                html += `<a href="${escapeHtml(item.uri)}" target="_blank" class="popup-item" style="text-decoration: none;">
                             <img src="${icon}" onerror="this.src='${getFavicon(item.uri)}';"> 
-                            ${escapeHtml(item.title.length > 35 ? item.title.slice(0,32)+'..' : item.title)}
+                            ${escapeHtml(item.title.length > 40 ? item.title.slice(0,37)+'..' : item.title)}
                          </a>`;
             } else if (item.type === "folder" && item.children && item.children.length > 0) {
-                html += `<div class="subfolder-wrapper">
-                            <div class="subfolder-trigger menu-item">
+                html += `<div class="subfolder-popup">
+                            <div class="popup-item popup-folder">
                                 <span><i class="fas fa-folder"></i> ${escapeHtml(item.title)}</span>
                                 <i class="fas fa-chevron-right" style="font-size: 10px;"></i>
                             </div>
-                            <div class="subfolder-menu">${buildMenuHtml(item.children)}</div>
+                            <div class="subfolder-content hide-scrollbar" style="max-height: 300px; overflow-y: auto;">
+                                ${buildPopupHtml(item.children)}
+                            </div>
                          </div>`;
             }
         }
@@ -430,93 +587,108 @@
         if (!jsonData || !jsonData.children) return [];
         function findToolbar(node) {
             if (node.root === "toolbarFolder") return node.children;
-            if (node.children) {
-                for (const c of node.children) {
-                    const found = findToolbar(c);
-                    if (found) return found;
-                }
-            }
+            if (node.children) { for (const c of node.children) { const found = findToolbar(c); if (found) return found; } }
             return null;
         }
-        const toolbar = findToolbar(jsonData);
-        return toolbar || [];
+        return findToolbar(jsonData) || [];
     }
 
     function convertNode(node) {
         if (!node) return null;
-        const item = {
-            title: node.title || "",
-            type: node.typeCode === 2 ? "folder" : (node.typeCode === 1 ? "bookmark" : null),
-            uri: node.uri,
-            children: [],
-            iconUri: node.iconUri
-        };
+        const item = { title: node.title || "", type: node.typeCode === 2 ? "folder" : (node.typeCode === 1 ? "bookmark" : null), uri: node.uri, children: [], iconUri: node.iconUri };
         if (item.type === "folder" && node.children) {
             for (const child of node.children) {
                 const converted = convertNode(child);
-                if (converted && ((converted.type === "bookmark" && converted.uri) || (converted.type === "folder" && converted.children.length > 0))) {
-                    item.children.push(converted);
-                }
+                if (converted && ((converted.type === "bookmark" && converted.uri) || (converted.type === "folder" && converted.children.length > 0))) item.children.push(converted);
             }
             return item;
         }
-        if (item.type === "bookmark" && item.uri && item.uri.startsWith("http")) {
-            return item;
-        }
+        if (item.type === "bookmark" && item.uri && item.uri.startsWith("http")) return item;
         return null;
     }
 
     function flattenForSearch(items, arr = []) {
         for (const item of items) {
-            if (item.type === "bookmark" && item.uri) {
-                arr.push({ name: item.title, url: item.uri });
-            }
+            if (item.type === "bookmark" && item.uri) arr.push({ name: item.title, url: item.uri });
             if (item.children) flattenForSearch(item.children, arr);
         }
         return arr;
     }
 
+    function closePopup() {
+        if (activePopup) {
+            activePopup.remove();
+            activePopup = null;
+        }
+    }
+
+    function showFolderPopup(folderItem, buttonElement) {
+        closePopup();
+        
+        const popup = document.createElement('div');
+        popup.className = 'folder-popup hide-scrollbar';
+        popup.innerHTML = buildPopupHtml(folderItem.children);
+        
+        const rect = buttonElement.getBoundingClientRect();
+        popup.style.position = 'fixed';
+        popup.style.top = `${rect.bottom + 5}px`;
+        popup.style.left = `${rect.left}px`;
+        
+        if (rect.left + 280 > window.innerWidth) {
+            popup.style.left = `${window.innerWidth - 290}px`;
+        }
+        
+        document.body.appendChild(popup);
+        activePopup = popup;
+        
+        const closeHandler = (e) => {
+            if (!popup.contains(e.target) && e.target !== buttonElement && !buttonElement.contains(e.target)) {
+                closePopup();
+                document.removeEventListener('click', closeHandler);
+            }
+        };
+        setTimeout(() => document.addEventListener('click', closeHandler), 100);
+    }
+
     function renderBookmarkBar(items) {
         const container = document.getElementById("bookmarkBarContainer");
-        if (!items || items.length === 0) {
-            container.innerHTML = '<div class="bookmark-bar-inner">No toolbar bookmarks</div>';
-            return;
-        }
+        if (!items || items.length === 0) { container.innerHTML = '<div class="bookmark-bar-inner">No toolbar bookmarks</div>'; return; }
         let html = '<div class="bookmark-bar-inner">';
-        for (const item of items) {
+        for (let idx = 0; idx < items.length; idx++) {
+            const item = items[idx];
             if (item.type === "bookmark") {
                 const icon = item.iconUri && item.iconUri.startsWith("http") ? item.iconUri : getFavicon(item.uri);
-                html += `<a href="${escapeHtml(item.uri)}" target="_blank" class="folder-button" style="text-decoration: none;">
+                html += `<a href="${escapeHtml(item.uri)}" target="_blank" class="folder-btn bookmark-link" style="text-decoration: none;">
                             <img src="${icon}" style="width: 14px; height: 14px;" onerror="this.src='${getFavicon(item.uri)}';"> 
                             ${escapeHtml(item.title.length > 18 ? item.title.slice(0,15)+'..' : item.title)}
                          </a>`;
             } else if (item.type === "folder" && item.children && item.children.length > 0) {
-                html += `<div class="folder-wrapper">
-                            <button class="folder-button">
-                                <i class="fas fa-folder"></i> ${escapeHtml(item.title.length > 18 ? item.title.slice(0,15)+'..' : item.title)}
-                                <i class="fas fa-chevron-down" style="font-size: 9px;"></i>
-                            </button>
-                            <div class="folder-dropdown-menu">
-                                ${buildMenuHtml(item.children)}
-                            </div>
-                         </div>`;
+                html += `<button class="folder-btn" data-folder-idx="${idx}">
+                            <i class="fas fa-folder"></i> ${escapeHtml(item.title.length > 18 ? item.title.slice(0,15)+'..' : item.title)}
+                            <i class="fas fa-chevron-down" style="font-size: 9px;"></i>
+                         </button>`;
             }
         }
         html += '</div>';
         container.innerHTML = html;
+        
+        document.querySelectorAll('.folder-btn[data-folder-idx]').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const idx = parseInt(btn.getAttribute('data-folder-idx'));
+                const folderItem = items[idx];
+                if (folderItem && folderItem.type === 'folder') {
+                    showFolderPopup(folderItem, btn);
+                }
+            });
+        });
     }
 
-    // Render categories: icon above text, NO ENVELOPE, just pure icon and text
     function renderCategories() {
         const container = document.getElementById("categoriesContainer");
         const categories = ["Cat A", "Cat B", "Cat C", "Cat D", "Cat E"];
         const grouped = { "Cat A": [], "Cat B": [], "Cat C": [], "Cat D": [], "Cat E": [] };
-        
-        csvCategoryBookmarks.forEach(b => {
-            if (grouped[b.category]) {
-                grouped[b.category].push(b);
-            }
-        });
+        csvCategoryBookmarks.forEach(b => { if (grouped[b.category]) grouped[b.category].push(b); });
         
         let html = "";
         let hasAny = false;
@@ -524,40 +696,26 @@
             const items = grouped[cat];
             if (items.length === 0) continue;
             hasAny = true;
-            html += `<div class="category-row">
-                        <div class="category-title">${cat}</div>
-                        <div class="app-drawer-row">`;
+            html += `<div class="category-row"><div class="category-title">${cat}</div><div class="equal-grid">`;
             items.forEach(item => {
                 const iconUrl = (item.icon && item.icon.startsWith("http")) ? item.icon : getFavicon(item.url);
-                // Pure icon + text - no square background, no tile envelope
-                html += `<a href="${escapeHtml(item.url)}" target="_blank" class="clean-app-tile" title="${escapeHtml(item.name)}">
-                            <div class="direct-icon">
-                                <img src="${iconUrl}" onerror="this.src='${getFavicon(item.url)}';">
-                            </div>
-                            <span>${escapeHtml(item.name.length > 14 ? item.name.slice(0,12)+'..' : item.name)}</span>
-                         </a>`;
+                html += `<a href="${escapeHtml(item.url)}" target="_blank" class="clean-app-tile"><div class="direct-icon"><img src="${iconUrl}" onerror="this.src='${getFavicon(item.url)}';"></div><span>${escapeHtml(item.name.length > 14 ? item.name.slice(0,12)+'..' : item.name)}</span></a>`;
             });
             html += `</div></div>`;
         }
-        if (!hasAny) {
-            html = '<div class="empty-cat">No categories found. Make sure column 3 has "Cat A", "Cat B", etc.</div>';
-        }
+        if (!hasAny) html = '<div class="empty-cat">No categories found. Make sure column 3 has "Cat A", "Cat B", etc.</div>';
         container.innerHTML = html;
     }
 
     function updateBookmarkSearchPopup(query) {
         const dropdown = document.getElementById("bookmarkSearchDropdown");
         if (!query.trim()) { dropdown.style.display = "none"; return; }
-        const lowerQuery = query.toLowerCase();
-        const matches = allBookmarksForSearch.filter(b => b.name.toLowerCase().includes(lowerQuery));
+        const matches = allBookmarksForSearch.filter(b => b.name.toLowerCase().includes(query.toLowerCase()));
         if (matches.length === 0) { dropdown.style.display = "none"; return; }
         let html = "";
         matches.slice(0, 15).forEach(b => {
             const icon = getFavicon(b.url);
-            html += `<a href="${escapeHtml(b.url)}" target="_blank" class="dropdown-item">
-                        <img src="${icon}" onerror="this.src='${getFavicon(b.url)}';"> 
-                        ${escapeHtml(b.name.length > 50 ? b.name.slice(0,47)+'..' : b.name)}
-                     </a>`;
+            html += `<a href="${escapeHtml(b.url)}" target="_blank" class="dropdown-item"><img src="${icon}"> ${escapeHtml(b.name.length > 50 ? b.name.slice(0,47)+'..' : b.name)}</a>`;
         });
         dropdown.innerHTML = html;
         dropdown.style.display = "block";
@@ -568,94 +726,172 @@
         let html = "";
         searchEngines.forEach(eng => {
             const icon = eng.icon && eng.icon.startsWith("http") ? eng.icon : getFavicon(eng.urlTemplate);
-            html += `<div class="dropdown-item" data-engine-name="${escapeHtml(eng.name)}">
-                        <img src="${icon}" onerror="this.src='${getFavicon(eng.urlTemplate)}';"> 
-                        ${eng.name} ${eng.active ? "✓" : ""}
-                     </div>`;
+            html += `<div class="dropdown-item" data-name="${escapeHtml(eng.name)}"><img src="${icon}"> ${eng.name} ${eng.active ? "✓" : ""}</div>`;
         });
         dropdown.innerHTML = html;
         document.querySelectorAll("#engineDropdown .dropdown-item").forEach(el => {
             el.addEventListener("click", () => {
-                const name = el.getAttribute("data-engine-name");
+                const name = el.getAttribute("data-name");
                 const engine = searchEngines.find(e => e.name === name);
                 if (engine) {
                     searchEngines.forEach(e => e.active = false);
                     engine.active = true;
                     currentEngine = engine;
-                    updateEngineUI();
+                    const iconUrl = currentEngine.icon && currentEngine.icon.startsWith("http") ? currentEngine.icon : getFavicon(currentEngine.urlTemplate);
+                    document.getElementById("currentEngineIcon").src = iconUrl;
                     dropdown.style.display = "none";
                 }
             });
         });
     }
 
-    function updateEngineUI() {
-        currentEngine = searchEngines.find(e => e.active) || searchEngines[0];
-        if (currentEngine) {
-            const iconUrl = currentEngine.icon && currentEngine.icon.startsWith("http") ? currentEngine.icon : getFavicon(currentEngine.urlTemplate);
-            document.getElementById("currentEngineIcon").src = iconUrl;
-            document.getElementById("currentEngineName").innerText = currentEngine.name.length > 12 ? currentEngine.name.slice(0,10)+'..' : currentEngine.name;
-        }
-    }
-
     function performSearch() {
         const query = document.getElementById("engineQueryInput").value;
         if (!query.trim()) return;
         const engine = currentEngine || searchEngines[0];
-        const url = engine.urlTemplate.replace("%s", encodeURIComponent(query));
-        window.open(url, "_blank");
+        window.open(engine.urlTemplate.replace("%s", encodeURIComponent(query)), "_blank");
     }
+
+    // Toggle Bookmark Bar
+    function toggleBookmarkBar() {
+        const bookmarkBar = document.getElementById("bookmarkBarContainer");
+        const toggleIcon = document.getElementById("toggleIcon");
+        isBookmarkBarCollapsed = !isBookmarkBarCollapsed;
+        if (isBookmarkBarCollapsed) {
+            bookmarkBar.classList.add("collapsed");
+            toggleIcon.className = "fas fa-chevron-down";
+        } else {
+            bookmarkBar.classList.remove("collapsed");
+            toggleIcon.className = "fas fa-chevron-up";
+        }
+    }
+    document.getElementById("toggleBookmarkSection").addEventListener("click", toggleBookmarkBar);
+
+    // Clock
+    function updateClock() {
+        const now = new Date();
+        let hours = now.getHours() % 12 || 12;
+        const ampm = now.getHours() >= 12 ? 'PM' : 'AM';
+        const minutes = String(now.getMinutes()).padStart(2,'0');
+        const seconds = String(now.getSeconds()).padStart(2,'0');
+        document.getElementById("clockDisplay").innerText = `${hours}:${minutes}:${seconds} ${ampm}`;
+        const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+        document.getElementById("dateDisplay").innerText = now.toLocaleDateString('en-US', options);
+    }
+    setInterval(updateClock, 1000);
+    updateClock();
+
+    // Calendar popup - FIXED
+    let activeCalendar = null;
+    function showCalendarPopup(anchorBtn) {
+        if (activeCalendar) {
+            activeCalendar.remove();
+            activeCalendar = null;
+            return;
+        }
+        
+        const popup = document.createElement('div');
+        popup.className = 'calendar-popup';
+        let currentYear = new Date().getFullYear();
+        let currentMonth = new Date().getMonth();
+        
+        function renderCal(year, month) {
+            const firstDay = new Date(year, month, 1);
+            const startDay = firstDay.getDay();
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+            let html = `<div class="calendar-header">
+                            <button id="prevMonthBtn"><i class="fas fa-chevron-left"></i></button>
+                            <span>${firstDay.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}</span>
+                            <button id="nextMonthBtn"><i class="fas fa-chevron-right"></i></button>
+                        </div>
+                        <div class="calendar-grid">`;
+            const weekdays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+            weekdays.forEach(d => html += `<div class="calendar-weekday">${d}</div>`);
+            for (let i = 0; i < startDay; i++) html += `<div></div>`;
+            for (let d = 1; d <= daysInMonth; d++) {
+                const dayOfWeek = (startDay + d - 1) % 7;
+                const isFriSat = dayOfWeek === 5 || dayOfWeek === 6;
+                const isToday = d === new Date().getDate() && year === new Date().getFullYear() && month === new Date().getMonth();
+                html += `<div class="calendar-day ${isFriSat ? 'friday-sat' : ''} ${isToday ? 'current-day' : ''}">${d}</div>`;
+            }
+            html += `</div>`;
+            popup.innerHTML = html;
+            
+            const prevBtn = document.getElementById('prevMonthBtn');
+            const nextBtn = document.getElementById('nextMonthBtn');
+            if (prevBtn) prevBtn.onclick = (e) => { e.stopPropagation(); renderCal(year, month - 1); };
+            if (nextBtn) nextBtn.onclick = (e) => { e.stopPropagation(); renderCal(year, month + 1); };
+        }
+        renderCal(currentYear, currentMonth);
+        
+        const rect = anchorBtn.getBoundingClientRect();
+        popup.style.position = 'fixed';
+        popup.style.top = `${rect.bottom + 5}px`;
+        popup.style.right = `${window.innerWidth - rect.right + 5}px`;
+        document.body.appendChild(popup);
+        activeCalendar = popup;
+        
+        const closeHandler = (e) => {
+            if (!popup.contains(e.target) && e.target !== anchorBtn && !anchorBtn.contains(e.target)) {
+                if (activeCalendar) {
+                    activeCalendar.remove();
+                    activeCalendar = null;
+                }
+                document.removeEventListener('click', closeHandler);
+            }
+        };
+        setTimeout(() => document.addEventListener('click', closeHandler), 100);
+    }
+
+    const calendarBtn = document.getElementById("calendarBtn");
+    calendarBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        showCalendarPopup(calendarBtn);
+    });
+
+    document.getElementById("editSheetBtn").addEventListener("click", () => {
+        window.open(EDIT_SHEET_URL, "_blank");
+    });
+
+    async function refreshCsv() {
+        document.getElementById("categoriesContainer").innerHTML = '<div style="text-align: center; padding: 2rem;"><i class="fas fa-spinner fa-pulse"></i> Refreshing categories...</div>';
+        csvCategoryBookmarks = await loadCsvCategoryBookmarks();
+        renderCategories();
+    }
+    document.getElementById("refreshCsvBtn").addEventListener("click", refreshCsv);
 
     async function init() {
         try {
             csvCategoryBookmarks = await loadCsvCategoryBookmarks();
             renderCategories();
-
             searchEngines = await loadSearchEngines();
             if (!searchEngines.some(e => e.active)) searchEngines[0].active = true;
             currentEngine = searchEngines.find(e => e.active);
-            updateEngineUI();
+            const iconUrl = currentEngine.icon && currentEngine.icon.startsWith("http") ? currentEngine.icon : getFavicon(currentEngine.urlTemplate);
+            document.getElementById("currentEngineIcon").src = iconUrl;
             renderEngineDropdown();
-
             const jsonRes = await fetch(JSON_BOOKMARKS_URL);
             const jsonData = await jsonRes.json();
-            
-            const toolbarRawChildren = extractToolbarChildren(jsonData);
+            const toolbarRaw = extractToolbarChildren(jsonData);
             toolbarItems = [];
-            for (const child of toolbarRawChildren) {
-                const converted = convertNode(child);
-                if (converted) toolbarItems.push(converted);
-            }
-            
+            for (const child of toolbarRaw) { const conv = convertNode(child); if (conv) toolbarItems.push(conv); }
             renderBookmarkBar(toolbarItems);
-            
             allBookmarksForSearch = [];
-            for (const item of toolbarItems) {
-                flattenForSearch([item], allBookmarksForSearch);
-            }
+            for (const item of toolbarItems) flattenForSearch([item], allBookmarksForSearch);
             
-            const engineBtn = document.getElementById("engineSelectorBtn");
-            const engineDropdownDiv = document.getElementById("engineDropdown");
-            engineBtn.addEventListener("click", (e) => {
-                e.stopPropagation();
-                engineDropdownDiv.style.display = engineDropdownDiv.style.display === "none" ? "block" : "none";
-            });
-            document.addEventListener("click", (e) => {
-                if (!engineBtn.contains(e.target) && !engineDropdownDiv.contains(e.target)) 
-                    engineDropdownDiv.style.display = "none";
-                if (!document.querySelector(".bookmark-search-wrapper").contains(e.target)) 
-                    document.getElementById("bookmarkSearchDropdown").style.display = "none";
-            });
             document.getElementById("engineSearchBtn").addEventListener("click", performSearch);
-            document.getElementById("engineQueryInput").addEventListener("keypress", (e) => { if (e.key === "Enter") performSearch(); });
-            const bookmarkSearch = document.getElementById("bookmarkSearchInput");
-            bookmarkSearch.addEventListener("input", (e) => updateBookmarkSearchPopup(e.target.value));
-            document.getElementById("clearBookmarkSearch").addEventListener("click", () => { bookmarkSearch.value = ""; updateBookmarkSearchPopup(""); });
-            
-        } catch(err) {
-            console.error(err);
-            document.getElementById("categoriesContainer").innerHTML = `<div class="empty-cat">Error: ${err.message}</div>`;
-        }
+            document.getElementById("engineQueryInput").addEventListener("keypress", e => { if (e.key === "Enter") performSearch(); });
+            const engineBtn = document.getElementById("engineSelectorBtn");
+            const engineDrop = document.getElementById("engineDropdown");
+            engineBtn.addEventListener("click", (e) => { e.stopPropagation(); engineDrop.style.display = engineDrop.style.display === "none" ? "block" : "none"; });
+            document.addEventListener("click", (e) => { 
+                if (!engineBtn.contains(e.target) && !engineDrop.contains(e.target)) engineDrop.style.display = "none";
+                if (!document.querySelector(".bookmark-search-wrapper").contains(e.target)) document.getElementById("bookmarkSearchDropdown").style.display = "none";
+                closePopup();
+            });
+            document.getElementById("bookmarkSearchInput").addEventListener("input", e => updateBookmarkSearchPopup(e.target.value));
+            document.getElementById("clearBookmarkSearch").addEventListener("click", () => { document.getElementById("bookmarkSearchInput").value = ""; updateBookmarkSearchPopup(""); });
+        } catch(err) { console.error(err); document.getElementById("categoriesContainer").innerHTML = `<div class="empty-cat">Error: ${err.message}</div>`; }
     }
     init();
 </script>
