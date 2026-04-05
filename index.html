@@ -133,35 +133,6 @@
         .calendar-day:hover { background: #1f2937; }
         .friday-sat { color: #ef4444; }
         .current-day { background: #3b82f6; color: white; }
-        .holiday-day {
-            background: #7f1a1a;
-            color: #ffcccc;
-            font-weight: bold;
-            position: relative;
-        }
-        .holiday-day::after {
-            content: "🎉";
-            position: absolute;
-            top: -2px;
-            right: 2px;
-            font-size: 8px;
-        }
-        .holiday-tooltip {
-            position: fixed;
-            background: #1f2937;
-            color: #ffcccc;
-            padding: 0.4rem 0.8rem;
-            border-radius: 0.5rem;
-            font-size: 0.7rem;
-            z-index: 10002;
-            pointer-events: none;
-            white-space: nowrap;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-            border: 1px solid #ef4444;
-            max-width: 200px;
-            white-space: normal;
-            word-break: break-word;
-        }
         
         .folder-popup {
             position: fixed;
@@ -472,10 +443,8 @@
     const SEARCH_ENGINES_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSxVk_HHPGsnAkM1qeSshRjzRXQ7BhKbk2OFTy-nurrhUQSCd7lz3LFOahHU_nqYd9OIxIu5wkzXEZZ/pub?gid=1271015321&single=true&output=csv";
     const JSON_BOOKMARKS_URL = "https://raw.githubusercontent.com/shafin-protic/Web_Bookmarks/refs/heads/main/Web_Bookmarks.json";
     const EDIT_SHEET_URL = "https://docs.google.com/spreadsheets/d/1ErgYkvSzc1CtNPGYAjMV4TeQqMH6tEV-l7DPT6faBPQ/edit?usp=sharing";
-    const HOLIDAYS_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTqj7nPwQGlbfP83LpgQf0ysTIO4NCv83liMZI-KtP2YrduRWWzLrv97Nwaj9h1Id1IXMg4LPII14lI/pub?gid=2070009302&single=true&output=csv";
     
     const CACHE_KEY_CATEGORIES = 'shafin_categories_cache';
-    const CACHE_KEY_HOLIDAYS = 'shafin_holidays_cache';
     const CACHE_KEY_SEARCH_ENGINES = 'shafin_search_engines_cache';
     const CACHE_KEY_TOOLBAR = 'shafin_toolbar_cache';
     const CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 hours
@@ -488,7 +457,6 @@
     let toolbarItems = [];
     let activePopup = null;
     let isBookmarkBarCollapsed = false;
-    let holidayMap = new Map();
     
     // ==================== UTILITY FUNCTIONS ====================
     function getFavicon(url) {
@@ -497,19 +465,6 @@
     function escapeHtml(str) { 
         if (!str) return '';
         return str.replace(/[&<>]/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[m]));
-    }
-    function parseDMYToYMD(dateStr) {
-        if (!dateStr) return null;
-        let parts = dateStr.split(/[-/]/);
-        if (parts.length < 3) return null;
-        let day = parts[0].padStart(2, '0');
-        let month = parts[1].padStart(2, '0');
-        let year = parts[2];
-        if (year.length === 2) year = parseInt(year) + 2000;
-        return `${year}-${month}-${day}`;
-    }
-    function formatDateToYMD(date) {
-        return date.toISOString().split('T')[0];
     }
     
     // ==================== CACHED FETCH ====================
@@ -520,7 +475,6 @@
                 try {
                     const { data, timestamp } = JSON.parse(cached);
                     if (Date.now() - timestamp < CACHE_DURATION) {
-                        console.log(`Using cached: ${cacheKey}`);
                         return data;
                     }
                 } catch(e) {}
@@ -528,9 +482,8 @@
         }
         const res = await fetch(url);
         const text = await res.text();
-        const data = text;
-        localStorage.setItem(cacheKey, JSON.stringify({ data, timestamp: Date.now() }));
-        return data;
+        localStorage.setItem(cacheKey, JSON.stringify({ data: text, timestamp: Date.now() }));
+        return text;
     }
     
     async function fetchCSV(url, cacheKey, forceRefresh = false) {
@@ -550,41 +503,7 @@
         });
     }
     
-    // ==================== DATA LOADERS WITH CACHE ====================
-    async function loadHolidays(forceRefresh = false) {
-        try {
-            const rows = await fetchCSV(HOLIDAYS_CSV_URL, CACHE_KEY_HOLIDAYS, forceRefresh);
-            if (rows.length < 2) return;
-            const holidays = new Map();
-            for (let i = 1; i < rows.length; i++) {
-                const row = rows[i];
-                if (row.length < 2) continue;
-                let startDateStr = row[1];
-                let endDateStr = row[2];
-                let subject = row[3] || "Holiday";
-                let description = row[4] || "";
-                let startYMD = parseDMYToYMD(startDateStr);
-                let endYMD = endDateStr ? parseDMYToYMD(endDateStr) : startYMD;
-                if (!startYMD) continue;
-                let startDate = new Date(startYMD);
-                let endDate = endYMD ? new Date(endYMD) : startDate;
-                if (isNaN(startDate.getTime())) continue;
-                let current = new Date(startDate);
-                let end = new Date(endDate);
-                while (current <= end) {
-                    let dateKey = formatDateToYMD(current);
-                    holidays.set(dateKey, { subject, description, startDate: startDateStr, endDate: endDateStr });
-                    current.setDate(current.getDate() + 1);
-                }
-            }
-            holidayMap = holidays;
-            document.getElementById('cacheIndicator').innerHTML = `📅 ${holidayMap.size} holidays cached`;
-        } catch(e) { 
-            console.warn("Could not load holidays", e);
-            document.getElementById('cacheIndicator').innerHTML = `⚠️ Using cached holidays`;
-        }
-    }
-    
+    // ==================== DATA LOADERS ====================
     async function loadCsvCategoryBookmarks(forceRefresh = false) {
         try {
             const rows = await fetchCSV(CSV_BOOKMARKS_URL, CACHE_KEY_CATEGORIES, forceRefresh);
@@ -843,25 +762,8 @@
         }
     }
     
-    // ==================== CALENDAR ====================
+    // ==================== CALENDAR (Only Fri/Sat in red) ====================
     let activeCalendar = null;
-    let activeTooltip = null;
-    
-    function showTooltip(event, text) {
-        if (activeTooltip) activeTooltip.remove();
-        const tooltip = document.createElement('div');
-        tooltip.className = 'holiday-tooltip';
-        tooltip.innerText = text;
-        document.body.appendChild(tooltip);
-        const rect = event.target.getBoundingClientRect();
-        tooltip.style.left = `${rect.left + 10}px`;
-        tooltip.style.top = `${rect.top - 30}px`;
-        activeTooltip = tooltip;
-    }
-    
-    function hideTooltip() {
-        if (activeTooltip) { activeTooltip.remove(); activeTooltip = null; }
-    }
     
     function showCalendarPopup(anchorBtn) {
         if (activeCalendar) { activeCalendar.remove(); activeCalendar = null; return; }
@@ -880,27 +782,15 @@
             for (let i = 0; i < startDay; i++) html += `<div></div>`;
             for (let d = 1; d <= daysInMonth; d++) {
                 const dayOfWeek = (startDay + d - 1) % 7;
-                const isFriSat = dayOfWeek === 5 || dayOfWeek === 6;
-                const currentDate = new Date(year, month, d);
-                const dateKey = formatDateToYMD(currentDate);
-                const holiday = holidayMap.get(dateKey);
-                const isHoliday = !!holiday;
+                const isFriSat = dayOfWeek === 5 || dayOfWeek === 6; // Friday=5, Saturday=6
                 const isToday = d === new Date().getDate() && year === new Date().getFullYear() && month === new Date().getMonth();
                 let dayClass = '';
-                if (isHoliday) dayClass = 'holiday-day';
-                else if (isFriSat) dayClass = 'friday-sat';
-                if (isToday && !isHoliday) dayClass = 'current-day';
-                html += `<div class="calendar-day ${dayClass}" data-date="${dateKey}" data-holiday-subject="${isHoliday ? escapeHtml(holiday.subject) : ''}">${d}</div>`;
+                if (isFriSat) dayClass = 'friday-sat';
+                if (isToday) dayClass = 'current-day';
+                html += `<div class="calendar-day ${dayClass}">${d}</div>`;
             }
             html += `</div>`;
             popup.innerHTML = html;
-            popup.querySelectorAll('.calendar-day[data-holiday-subject]').forEach(dayEl => {
-                const subject = dayEl.getAttribute('data-holiday-subject');
-                if (subject) {
-                    dayEl.addEventListener('mouseenter', (e) => showTooltip(e, subject));
-                    dayEl.addEventListener('mouseleave', hideTooltip);
-                }
-            });
             popup.querySelector('.prevCalBtn').onclick = (e) => { e.stopPropagation(); let nm = month - 1; let ny = year; if (nm < 0) { nm = 11; ny--; } renderCal(ny, nm); };
             popup.querySelector('.nextCalBtn').onclick = (e) => { e.stopPropagation(); let nm = month + 1; let ny = year; if (nm > 11) { nm = 0; ny++; } renderCal(ny, nm); };
         }
@@ -914,7 +804,6 @@
         const closeHandler = (e) => {
             if (!popup.contains(e.target) && e.target !== anchorBtn && !anchorBtn.contains(e.target)) {
                 if (activeCalendar) { activeCalendar.remove(); activeCalendar = null; }
-                hideTooltip();
                 document.removeEventListener('click', closeHandler);
             }
         };
@@ -937,7 +826,6 @@
     async function refreshAll() {
         document.getElementById('cacheIndicator').innerHTML = '🔄 Refreshing...';
         await Promise.all([
-            loadHolidays(true),
             loadCsvCategoryBookmarks(true),
             loadSearchEngines(true),
             (async () => { toolbarItems = await loadToolbar(true); })()
@@ -1040,31 +928,9 @@
                 } catch(e) {}
             }
             
-            const cachedHolidays = localStorage.getItem(CACHE_KEY_HOLIDAYS);
-            if (cachedHolidays) {
-                try {
-                    const { data } = JSON.parse(cachedHolidays);
-                    if (data) {
-                        const rows = data.split(/\r?\n/);
-                        const holidays = new Map();
-                        for (let i = 1; i < rows.length; i++) {
-                            const parts = rows[i].split(',');
-                            if (parts.length >= 2) {
-                                let startDateStr = parts[1]?.replace(/^"|"$/g, '');
-                                let subject = parts[3]?.replace(/^"|"$/g, '') || "Holiday";
-                                let startYMD = parseDMYToYMD(startDateStr);
-                                if (startYMD) holidays.set(startYMD, { subject, description: "" });
-                            }
-                        }
-                        if (holidays.size) holidayMap = holidays;
-                    }
-                } catch(e) {}
-            }
-            
             document.getElementById('cacheIndicator').innerHTML = '🔄 Background update...';
             // Background refresh
             Promise.all([
-                loadHolidays(true),
                 loadCsvCategoryBookmarks(true),
                 loadSearchEngines(true),
                 loadToolbar(true)
@@ -1072,7 +938,6 @@
                 csvCategoryBookmarks = await loadCsvCategoryBookmarks(true);
                 searchEngines = await loadSearchEngines(true);
                 toolbarItems = await loadToolbar(true);
-                await loadHolidays(true);
                 renderCategories();
                 renderBookmarkBar(toolbarItems);
                 renderEngineDropdown();
