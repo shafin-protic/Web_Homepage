@@ -15,10 +15,7 @@
             height: 100vh;
             overflow: hidden;
         }
-        .hide-scrollbar {
-            scrollbar-width: none;
-            -ms-overflow-style: none;
-        }
+        .hide-scrollbar { scrollbar-width: none; -ms-overflow-style: none; }
         .hide-scrollbar::-webkit-scrollbar { display: none; }
         
         .app {
@@ -59,11 +56,10 @@
             color: transparent;
             animation: skyTitleShine 3s ease-in-out infinite;
             letter-spacing: 1px;
-            text-shadow: 0 0 5px rgba(135,206,235,0.3);
         }
         @keyframes skyTitleShine {
             0% { background-position: 0% center; opacity: 0.85; }
-            50% { background-position: 100% center; opacity: 1; text-shadow: 0 0 12px rgba(135,206,235,0.6); }
+            50% { background-position: 100% center; opacity: 1; }
             100% { background-position: 0% center; opacity: 0.85; }
         }
         .header-right {
@@ -91,7 +87,6 @@
         }
         .icon-btn:hover { background: #374151; transform: scale(1.05); }
         
-        /* Calendar Popup */
         .calendar-popup {
             position: fixed;
             background: #111;
@@ -390,7 +385,7 @@
         </div>
         <div class="header-right">
             <button class="icon-btn" id="editSheetBtn" title="Edit Google Sheet"><i class="fas fa-pen"></i></button>
-            <button class="icon-btn" id="refreshCsvBtn" title="Refresh Categories"><i class="fas fa-sync-alt"></i></button>
+            <button class="icon-btn" id="refreshCsvBtn" title="Refresh All Data"><i class="fas fa-sync-alt"></i></button>
             <button class="icon-btn" id="calendarBtn" title="Calendar"><i class="fas fa-calendar-alt"></i></button>
             <div class="clock-date">
                 <div class="clock" id="clockDisplay">--:--:--</div>
@@ -435,7 +430,7 @@
     <div class="categories-section hide-scrollbar" id="categoriesContainer">
         <div class="empty-cat">Loading categories...</div>
     </div>
-    <div class="cache-indicator" id="cacheIndicator">Loading...</div>
+    <div class="cache-indicator" id="cacheIndicator">Starting...</div>
 </div>
 
 <script>
@@ -445,31 +440,43 @@
     const JSON_BOOKMARKS_URL = "https://raw.githubusercontent.com/shafin-protic/Web_Bookmarks/refs/heads/main/Web_Bookmarks.json";
     const EDIT_SHEET_URL = "https://docs.google.com/spreadsheets/d/1ErgYkvSzc1CtNPGYAjMV4TeQqMH6tEV-l7DPT6faBPQ/edit?usp=sharing";
     
-    const CACHE_KEY_CATEGORIES = 'shafin_categories_cache';
-    const CACHE_KEY_SEARCH_ENGINES = 'shafin_search_engines_cache';
-    const CACHE_KEY_TOOLBAR = 'shafin_toolbar_cache';
-    const CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 hours
+    const CACHE_KEY_CATEGORIES = 'shafin_categories_v2';
+    const CACHE_KEY_SEARCH_ENGINES = 'shafin_search_engines_v2';
+    const CACHE_KEY_TOOLBAR = 'shafin_toolbar_v2';
+    const CACHE_KEY_ICON_MAP = 'shafin_icon_map_v2';
+    const CACHE_DURATION = 24 * 60 * 60 * 1000;
     
-    // ==================== GLOBAL STATE ====================
     let csvCategoryBookmarks = [];
     let searchEngines = [];
     let currentEngine = null;
     let allBookmarksForSearch = [];
     let toolbarItems = [];
     let activePopup = null;
-    let isBookmarkBarCollapsed = false; // Start expanded (false = expanded)
+    let isBookmarkBarCollapsed = false;
+    let iconDataUrlMap = new Map(); // url -> dataURL or custom icon URL
     
-    // ==================== UTILITY FUNCTIONS ====================
-    function getFavicon(url) {
-        try { const domain = new URL(url).hostname; return `https://www.google.com/s2/favicons?domain=${domain}&sz=64`; } catch(e) { return ""; }
-    }
     function escapeHtml(str) { 
         if (!str) return '';
         return str.replace(/[&<>]/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[m]));
     }
     
-    // ==================== CACHED FETCH ====================
-    async function fetchWithCache(url, cacheKey, forceRefresh = false) {
+    function getDomainFromUrl(url) {
+        try { const domain = new URL(url).hostname; return domain.replace(/^www\./, ''); } catch(e) { return url; }
+    }
+    
+    function getFaviconUrl(url) {
+        try { const domain = new URL(url).hostname; return `https://www.google.com/s2/favicons?domain=${domain}&sz=64`; } catch(e) { return ""; }
+    }
+    
+    // Get icon from custom URL or generate favicon
+    function getIconForBookmark(bookmark) {
+        if (bookmark.customIcon && bookmark.customIcon.startsWith('http')) {
+            return bookmark.customIcon;
+        }
+        return getFaviconUrl(bookmark.url);
+    }
+    
+    async function fetchCSV(url, cacheKey, forceRefresh = false) {
         if (!forceRefresh) {
             const cached = localStorage.getItem(cacheKey);
             if (cached) {
@@ -487,38 +494,37 @@
         return text;
     }
     
-    async function fetchCSV(url, cacheKey, forceRefresh = false) {
-        const text = await fetchWithCache(url, cacheKey, forceRefresh);
-        const rows = text.split(/\r?\n/).filter(l => l.trim());
-        return rows.map(row => {
-            const regex = /(".*?"|[^,]*)(,|$)/g;
-            const cols = [];
-            let match;
-            while ((match = regex.exec(row)) !== null) {
-                let val = match[1];
-                if (val.startsWith('"') && val.endsWith('"')) val = val.slice(1, -1);
-                cols.push(val.trim());
-                if (match[2] !== ",") break;
-            }
-            return cols;
-        });
-    }
-    
-    // ==================== DATA LOADERS ====================
     async function loadCsvCategoryBookmarks(forceRefresh = false) {
         try {
-            const rows = await fetchCSV(CSV_BOOKMARKS_URL, CACHE_KEY_CATEGORIES, forceRefresh);
-            if (rows.length < 2) return [];
+            const text = await fetchCSV(CSV_BOOKMARKS_URL, CACHE_KEY_CATEGORIES, forceRefresh);
+            const rows = text.split(/\r?\n/).filter(l => l.trim());
             const data = [];
             for (let i = 1; i < rows.length; i++) {
                 const row = rows[i];
-                if (row.length < 3) continue;
-                const name = row[0];
-                const url = row[1];
-                const category = row[2] || "Uncategorized";
-                const icon = row[3] || "";
-                if (name && url && url.startsWith("http")) {
-                    data.push({ name, url, category: category.trim(), icon });
+                const parts = [];
+                let inQuote = false;
+                let current = '';
+                for (let c of row) {
+                    if (c === '"') { inQuote = !inQuote; }
+                    else if (c === ',' && !inQuote) { parts.push(current); current = ''; }
+                    else { current += c; }
+                }
+                parts.push(current);
+                if (parts.length >= 4) {
+                    let name = parts[0].replace(/^"|"$/g, '');
+                    let url = parts[1].replace(/^"|"$/g, '');
+                    let category = parts[2] ? parts[2].replace(/^"|"$/g, '') : "Uncategorized";
+                    let customIcon = parts[3] ? parts[3].replace(/^"|"$/g, '') : "";
+                    if (name && url && url.startsWith("http")) {
+                        data.push({ name, url, category: category.trim(), customIcon });
+                    }
+                } else if (parts.length >= 3) {
+                    let name = parts[0].replace(/^"|"$/g, '');
+                    let url = parts[1].replace(/^"|"$/g, '');
+                    let category = parts[2] ? parts[2].replace(/^"|"$/g, '') : "Uncategorized";
+                    if (name && url && url.startsWith("http")) {
+                        data.push({ name, url, category: category.trim(), customIcon: "" });
+                    }
                 }
             }
             return data;
@@ -527,28 +533,46 @@
     
     async function loadSearchEngines(forceRefresh = false) {
         try {
-            const rows = await fetchCSV(SEARCH_ENGINES_URL, CACHE_KEY_SEARCH_ENGINES, forceRefresh);
-            if (rows.length < 2) return [{ name: "Google", urlTemplate: "https://www.google.com/search?q=%s", active: true, icon: "" }];
+            const text = await fetchCSV(SEARCH_ENGINES_URL, CACHE_KEY_SEARCH_ENGINES, forceRefresh);
+            const rows = text.split(/\r?\n/).filter(l => l.trim());
             const engines = [];
             for (let i = 1; i < rows.length; i++) {
                 const row = rows[i];
-                if (row.length < 3) continue;
-                const name = row[0];
-                let urlTemplate = row[1];
-                const useIt = row[2]?.toLowerCase();
-                let icon = row[3] || "";
-                if (urlTemplate && !urlTemplate.includes("%s")) {
-                    urlTemplate += urlTemplate.includes("?") ? "&q=%s" : "?q=%s";
+                const parts = [];
+                let inQuote = false;
+                let current = '';
+                for (let c of row) {
+                    if (c === '"') { inQuote = !inQuote; }
+                    else if (c === ',' && !inQuote) { parts.push(current); current = ''; }
+                    else { current += c; }
                 }
-                const active = (useIt === "yes" || useIt === "y" || useIt === "true");
-                engines.push({ name, urlTemplate, active, icon });
+                parts.push(current);
+                if (parts.length >= 4) {
+                    let name = parts[0].replace(/^"|"$/g, '');
+                    let urlTemplate = parts[1].replace(/^"|"$/g, '');
+                    let useIt = parts[2]?.toLowerCase().replace(/^"|"$/g, '');
+                    let icon = parts[3]?.replace(/^"|"$/g, '');
+                    if (urlTemplate && !urlTemplate.includes("%s")) {
+                        urlTemplate += urlTemplate.includes("?") ? "&q=%s" : "?q=%s";
+                    }
+                    const active = (useIt === "yes" || useIt === "y" || useIt === "true");
+                    engines.push({ name, urlTemplate, active, customIcon: icon });
+                } else if (parts.length >= 3) {
+                    let name = parts[0].replace(/^"|"$/g, '');
+                    let urlTemplate = parts[1].replace(/^"|"$/g, '');
+                    let useIt = parts[2]?.toLowerCase().replace(/^"|"$/g, '');
+                    if (urlTemplate && !urlTemplate.includes("%s")) {
+                        urlTemplate += urlTemplate.includes("?") ? "&q=%s" : "?q=%s";
+                    }
+                    const active = (useIt === "yes" || useIt === "y" || useIt === "true");
+                    engines.push({ name, urlTemplate, active, customIcon: "" });
+                }
             }
-            if (engines.length === 0) engines.push({ name: "Google", urlTemplate: "https://www.google.com/search?q=%s", active: true, icon: "" });
+            if (engines.length === 0) engines.push({ name: "Google", urlTemplate: "https://www.google.com/search?q=%s", active: true, customIcon: "" });
             return engines;
-        } catch(e) { return [{ name: "Google", urlTemplate: "https://www.google.com/search?q=%s", active: true, icon: "" }]; }
+        } catch(e) { return [{ name: "Google", urlTemplate: "https://www.google.com/search?q=%s", active: true, customIcon: "" }]; }
     }
     
-    // ==================== JSON BOOKMARK PARSING ====================
     function extractToolbarChildren(jsonData) {
         if (!jsonData || !jsonData.children) return [];
         function findToolbar(node) {
@@ -597,7 +621,6 @@
         } catch(e) { console.error(e); return []; }
     }
     
-    // ==================== UI RENDERING ====================
     function flattenForSearch(items, arr = []) {
         for (const item of items) {
             if (item.type === "bookmark" && item.uri) arr.push({ name: item.title, url: item.uri });
@@ -620,8 +643,11 @@
         }
         for (const item of folderItem.children) {
             if (item.type === "bookmark") {
-                const icon = item.iconUri && item.iconUri.startsWith("http") ? item.iconUri : getFavicon(item.uri);
-                html += `<a href="${escapeHtml(item.uri)}" target="_blank" class="popup-item"><img src="${icon}" onerror="this.src='${getFavicon(item.uri)}';"> ${escapeHtml(item.title.length > 40 ? item.title.slice(0,37)+'..' : item.title)}</a>`;
+                const iconUrl = getFaviconUrl(item.uri);
+                html += `<a href="${escapeHtml(item.uri)}" target="_blank" class="popup-item" style="text-decoration: none;">
+                            <img src="${iconUrl}" width="16" height="16" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 24 24%27 fill=%27%233b82f6%27%3E%3Cpath d=%27M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z%27/%3E%3C/svg%3E';"> 
+                            ${escapeHtml(item.title.length > 40 ? item.title.slice(0,37)+'..' : item.title)}
+                         </a>`;
             } else if (item.type === "folder" && item.children && item.children.length > 0) {
                 html += `<button class="popup-item popup-folder" data-subfolder='${JSON.stringify({title: item.title})}'><span><i class="fas fa-folder"></i> ${escapeHtml(item.title)}</span><i class="fas fa-chevron-right"></i></button>`;
             }
@@ -667,8 +693,11 @@
         for (let idx = 0; idx < items.length; idx++) {
             const item = items[idx];
             if (item.type === "bookmark") {
-                const icon = item.iconUri && item.iconUri.startsWith("http") ? item.iconUri : getFavicon(item.uri);
-                html += `<a href="${escapeHtml(item.uri)}" target="_blank" class="folder-btn bookmark-link"><img src="${icon}" style="width:14px;height:14px;"> ${escapeHtml(item.title.length > 18 ? item.title.slice(0,15)+'..' : item.title)}</a>`;
+                const iconUrl = getFaviconUrl(item.uri);
+                html += `<a href="${escapeHtml(item.uri)}" target="_blank" class="folder-btn bookmark-link" style="text-decoration: none;">
+                            <img src="${iconUrl}" style="width:14px;height:14px;" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 24 24%27 fill=%27%233b82f6%27%3E%3Cpath d=%27M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z%27/%3E%3C/svg%3E';"> 
+                            ${escapeHtml(item.title.length > 18 ? item.title.slice(0,15)+'..' : item.title)}
+                         </a>`;
             } else if (item.type === "folder" && item.children && item.children.length > 0) {
                 html += `<button class="folder-btn" data-folder-idx="${idx}"><i class="fas fa-folder"></i> ${escapeHtml(item.title.length > 18 ? item.title.slice(0,15)+'..' : item.title)} <i class="fas fa-chevron-down"></i></button>`;
             }
@@ -696,13 +725,18 @@
             if (items.length === 0) continue;
             hasAny = true;
             html += `<div class="category-row"><div class="category-title">${cat}</div><div class="equal-grid">`;
-            items.forEach(item => {
-                const iconUrl = (item.icon && item.icon.startsWith("http")) ? item.icon : getFavicon(item.url);
-                html += `<a href="${escapeHtml(item.url)}" target="_blank" class="clean-app-tile"><div class="direct-icon"><img src="${iconUrl}" onerror="this.src='${getFavicon(item.url)}';"></div><span>${escapeHtml(item.name.length > 14 ? item.name.slice(0,12)+'..' : item.name)}</span></a>`;
-            });
+            for (const item of items) {
+                let iconUrl = item.customIcon && item.customIcon.startsWith('http') ? item.customIcon : getFaviconUrl(item.url);
+                html += `<a href="${escapeHtml(item.url)}" target="_blank" class="clean-app-tile">
+                            <div class="direct-icon">
+                                <img src="${iconUrl}" width="40" height="40" onerror="this.src='${getFaviconUrl(item.url)}';">
+                            </div>
+                            <span>${escapeHtml(item.name.length > 14 ? item.name.slice(0,12)+'..' : item.name)}</span>
+                         </a>`;
+            }
             html += `</div></div>`;
         }
-        if (!hasAny) html = '<div class="empty-cat">No categories found.</div>';
+        if (!hasAny) html = '<div class="empty-cat">No categories found. Add bookmarks with Cat A, Cat B, etc.</div>';
         container.innerHTML = html;
     }
     
@@ -713,8 +747,11 @@
         if (matches.length === 0) { dropdown.style.display = "none"; return; }
         let html = "";
         matches.slice(0, 15).forEach(b => {
-            const icon = getFavicon(b.url);
-            html += `<a href="${escapeHtml(b.url)}" target="_blank" class="dropdown-item"><img src="${icon}"> ${escapeHtml(b.name.length > 50 ? b.name.slice(0,47)+'..' : b.name)}</a>`;
+            const iconUrl = getFaviconUrl(b.url);
+            html += `<a href="${escapeHtml(b.url)}" target="_blank" class="dropdown-item">
+                        <img src="${iconUrl}" style="width:20px;height:20px;" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 24 24%27 fill=%27%233b82f6%27%3E%3Cpath d=%27M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z%27/%3E%3C/svg%3E';"> 
+                        ${escapeHtml(b.name.length > 50 ? b.name.slice(0,47)+'..' : b.name)}
+                     </a>`;
         });
         dropdown.innerHTML = html;
         dropdown.style.display = "block";
@@ -724,8 +761,11 @@
         const dropdown = document.getElementById("engineDropdown");
         let html = "";
         searchEngines.forEach(eng => {
-            const icon = eng.icon && eng.icon.startsWith("http") ? eng.icon : getFavicon(eng.urlTemplate);
-            html += `<div class="dropdown-item" data-name="${escapeHtml(eng.name)}"><img src="${icon}"> ${eng.name} ${eng.active ? "✓" : ""}</div>`;
+            let iconUrl = eng.customIcon && eng.customIcon.startsWith('http') ? eng.customIcon : getFaviconUrl(eng.urlTemplate);
+            html += `<div class="dropdown-item" data-name="${escapeHtml(eng.name)}">
+                        <img src="${iconUrl}" style="width:20px;height:20px;" onerror="this.src='${getFaviconUrl(eng.urlTemplate)}';"> 
+                        ${eng.name} ${eng.active ? "✓" : ""}
+                     </div>`;
         });
         dropdown.innerHTML = html;
         document.querySelectorAll("#engineDropdown .dropdown-item").forEach(el => {
@@ -736,7 +776,8 @@
                     searchEngines.forEach(e => e.active = false);
                     engine.active = true;
                     currentEngine = engine;
-                    document.getElementById("currentEngineIcon").src = engine.icon && engine.icon.startsWith("http") ? engine.icon : getFavicon(engine.urlTemplate);
+                    let iconUrl = engine.customIcon && engine.customIcon.startsWith('http') ? engine.customIcon : getFaviconUrl(engine.urlTemplate);
+                    document.getElementById("currentEngineIcon").src = iconUrl;
                     dropdown.style.display = "none";
                 }
             });
@@ -763,9 +804,7 @@
         }
     }
     
-    // ==================== CALENDAR (Only Fri/Sat in red) ====================
     let activeCalendar = null;
-    
     function showCalendarPopup(anchorBtn) {
         if (activeCalendar) { activeCalendar.remove(); activeCalendar = null; return; }
         const popup = document.createElement('div');
@@ -811,7 +850,6 @@
         setTimeout(() => document.addEventListener('click', closeHandler), 100);
     }
     
-    // ==================== CLOCK ====================
     function updateClock() {
         const now = new Date();
         let hours = now.getHours() % 12 || 12;
@@ -823,27 +861,25 @@
         document.getElementById("dateDisplay").innerText = now.toLocaleDateString('en-US', options);
     }
     
-    // ==================== REFRESH ====================
     async function refreshAll() {
         document.getElementById('cacheIndicator').innerHTML = '🔄 Refreshing...';
-        await Promise.all([
+        const [newCategories, newEngines, newToolbar] = await Promise.all([
             loadCsvCategoryBookmarks(true),
             loadSearchEngines(true),
-            (async () => { toolbarItems = await loadToolbar(true); })()
+            loadToolbar(true)
         ]);
-        csvCategoryBookmarks = await loadCsvCategoryBookmarks(true);
-        searchEngines = await loadSearchEngines(true);
-        toolbarItems = await loadToolbar(true);
+        csvCategoryBookmarks = newCategories;
+        searchEngines = newEngines;
+        toolbarItems = newToolbar;
         renderCategories();
         renderBookmarkBar(toolbarItems);
         renderEngineDropdown();
         allBookmarksForSearch = [];
         for (const item of toolbarItems) flattenForSearch([item], allBookmarksForSearch);
         document.getElementById('cacheIndicator').innerHTML = `✅ Updated ${new Date().toLocaleTimeString()}`;
-        setTimeout(() => { if(document.getElementById('cacheIndicator').innerHTML.includes('Updated')) document.getElementById('cacheIndicator').innerHTML = `📚 Cached`; }, 3000);
+        setTimeout(() => { if(document.getElementById('cacheIndicator').innerHTML.includes('Updated')) document.getElementById('cacheIndicator').innerHTML = `📚 Cached`; }, 2000);
     }
     
-    // ==================== INIT ====================
     document.getElementById("toggleIconBtn").addEventListener("click", toggleBookmarkBar);
     document.getElementById("calendarBtn").addEventListener("click", (e) => { e.stopPropagation(); showCalendarPopup(e.currentTarget); });
     document.getElementById("editSheetBtn").addEventListener("click", () => { window.open(EDIT_SHEET_URL, "_blank"); });
@@ -858,7 +894,6 @@
     
     async function init() {
         try {
-            // Ensure bookmark bar is expanded by default on every load
             const bookmarkBar = document.getElementById("bookmarkBarContainer");
             const toggleIcon = document.getElementById("toggleIcon");
             if (bookmarkBar) {
@@ -867,95 +902,32 @@
                 isBookmarkBarCollapsed = false;
             }
             
-            document.getElementById('cacheIndicator').innerHTML = '📦 Loading from cache...';
-            // Load from cache first (instant)
-            const cachedCategories = localStorage.getItem(CACHE_KEY_CATEGORIES);
-            if (cachedCategories) {
-                try {
-                    const { data } = JSON.parse(cachedCategories);
-                    if (data) {
-                        const rows = data.split(/\r?\n/);
-                        const parsed = [];
-                        for (let i = 1; i < rows.length; i++) {
-                            const parts = rows[i].split(',');
-                            if (parts.length >= 3) {
-                                let name = parts[0].replace(/^"|"$/g, '');
-                                let url = parts[1].replace(/^"|"$/g, '');
-                                let category = parts[2] ? parts[2].replace(/^"|"$/g, '') : "Uncategorized";
-                                if (name && url && url.startsWith("http")) {
-                                    parsed.push({ name, url, category: category.trim(), icon: "" });
-                                }
-                            }
-                        }
-                        if (parsed.length) csvCategoryBookmarks = parsed;
-                        renderCategories();
-                    }
-                } catch(e) {}
-            }
+            document.getElementById('cacheIndicator').innerHTML = '📦 Loading...';
             
-            const cachedToolbar = localStorage.getItem(CACHE_KEY_TOOLBAR);
-            if (cachedToolbar) {
-                try {
-                    const { data } = JSON.parse(cachedToolbar);
-                    if (data) {
-                        const toolbarRaw = extractToolbarChildren(data);
-                        const items = [];
-                        for (const child of toolbarRaw) { const conv = convertNode(child); if (conv) items.push(conv); }
-                        if (items.length) toolbarItems = items;
-                        renderBookmarkBar(toolbarItems);
-                        allBookmarksForSearch = [];
-                        for (const item of toolbarItems) flattenForSearch([item], allBookmarksForSearch);
-                    }
-                } catch(e) {}
-            }
+            const [categories, engines, toolbar] = await Promise.all([
+                loadCsvCategoryBookmarks(false),
+                loadSearchEngines(false),
+                loadToolbar(false)
+            ]);
             
-            const cachedSearch = localStorage.getItem(CACHE_KEY_SEARCH_ENGINES);
-            if (cachedSearch) {
-                try {
-                    const { data } = JSON.parse(cachedSearch);
-                    if (data) {
-                        const rows = data.split(/\r?\n/);
-                        const engines = [];
-                        for (let i = 1; i < rows.length; i++) {
-                            const parts = rows[i].split(',');
-                            if (parts.length >= 3) {
-                                let name = parts[0].replace(/^"|"$/g, '');
-                                let urlTemplate = parts[1].replace(/^"|"$/g, '');
-                                let useIt = parts[2]?.toLowerCase();
-                                if (urlTemplate && !urlTemplate.includes("%s")) {
-                                    urlTemplate += urlTemplate.includes("?") ? "&q=%s" : "?q=%s";
-                                }
-                                const active = (useIt === "yes" || useIt === "y" || useIt === "true");
-                                engines.push({ name, urlTemplate, active, icon: "" });
-                            }
-                        }
-                        if (engines.length) searchEngines = engines;
-                        if (!searchEngines.some(e => e.active)) searchEngines[0].active = true;
-                        currentEngine = searchEngines.find(e => e.active);
-                        document.getElementById("currentEngineIcon").src = getFavicon(currentEngine.urlTemplate);
-                        renderEngineDropdown();
-                    }
-                } catch(e) {}
-            }
+            csvCategoryBookmarks = categories;
+            searchEngines = engines;
+            toolbarItems = toolbar;
             
-            document.getElementById('cacheIndicator').innerHTML = '🔄 Background update...';
-            // Background refresh
-            Promise.all([
-                loadCsvCategoryBookmarks(true),
-                loadSearchEngines(true),
-                loadToolbar(true)
-            ]).then(async () => {
-                csvCategoryBookmarks = await loadCsvCategoryBookmarks(true);
-                searchEngines = await loadSearchEngines(true);
-                toolbarItems = await loadToolbar(true);
-                renderCategories();
-                renderBookmarkBar(toolbarItems);
-                renderEngineDropdown();
-                allBookmarksForSearch = [];
-                for (const item of toolbarItems) flattenForSearch([item], allBookmarksForSearch);
-                document.getElementById('cacheIndicator').innerHTML = `✅ Live data loaded`;
-                setTimeout(() => { if(document.getElementById('cacheIndicator').innerHTML.includes('Live')) document.getElementById('cacheIndicator').innerHTML = `📚 Cached`; }, 2000);
-            }).catch(e => console.warn("Background refresh failed", e));
+            if (!searchEngines.some(e => e.active)) searchEngines[0].active = true;
+            currentEngine = searchEngines.find(e => e.active);
+            let engineIconUrl = currentEngine.customIcon && currentEngine.customIcon.startsWith('http') ? currentEngine.customIcon : getFaviconUrl(currentEngine.urlTemplate);
+            document.getElementById("currentEngineIcon").src = engineIconUrl;
+            
+            renderCategories();
+            renderBookmarkBar(toolbarItems);
+            renderEngineDropdown();
+            
+            allBookmarksForSearch = [];
+            for (const item of toolbarItems) flattenForSearch([item], allBookmarksForSearch);
+            
+            document.getElementById('cacheIndicator').innerHTML = `✅ Ready (${csvCategoryBookmarks.length} items)`;
+            setTimeout(() => { if(document.getElementById('cacheIndicator').innerHTML.includes('Ready')) document.getElementById('cacheIndicator').innerHTML = `📚 Cached`; }, 2000);
             
             const engineBtn = document.getElementById("engineSelectorBtn");
             const engineDrop = document.getElementById("engineDropdown");
@@ -971,7 +943,11 @@
                 profileImg.style.display = 'none';
                 document.getElementById('fallbackIcon').style.display = 'flex';
             }
-        } catch(err) { console.error(err); document.getElementById("categoriesContainer").innerHTML = `<div class="empty-cat">Error: ${err.message}</div>`; }
+        } catch(err) { 
+            console.error(err); 
+            document.getElementById("categoriesContainer").innerHTML = `<div class="empty-cat">Error: ${err.message}</div>`;
+            document.getElementById('cacheIndicator').innerHTML = `⚠️ Error`;
+        }
     }
     init();
 </script>
