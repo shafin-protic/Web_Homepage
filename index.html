@@ -52,18 +52,19 @@
         .page-title h1 {
             font-size: 1.6rem;
             font-weight: 700;
-            background: linear-gradient(135deg, #ff9999, #ffdd99, #ffcc99, #ff9999);
+            background: linear-gradient(135deg, #87CEEB, #ffffff, #87CEEB, #add8e6, #ffffff);
             background-size: 300% auto;
             -webkit-background-clip: text;
             background-clip: text;
             color: transparent;
-            animation: titleShine 4s ease-in-out infinite;
+            animation: skyTitleShine 3s ease-in-out infinite;
             letter-spacing: 1px;
+            text-shadow: 0 0 5px rgba(135,206,235,0.3);
         }
-        @keyframes titleShine {
-            0% { background-position: 0% center; opacity: 0.9; }
-            50% { background-position: 100% center; opacity: 1; }
-            100% { background-position: 0% center; opacity: 0.9; }
+        @keyframes skyTitleShine {
+            0% { background-position: 0% center; opacity: 0.85; }
+            50% { background-position: 100% center; opacity: 1; text-shadow: 0 0 12px rgba(135,206,235,0.6); }
+            100% { background-position: 0% center; opacity: 0.85; }
         }
         .header-right {
             display: flex;
@@ -456,7 +457,7 @@
     let allBookmarksForSearch = [];
     let toolbarItems = [];
     let activePopup = null;
-    let isBookmarkBarCollapsed = false;
+    let isBookmarkBarCollapsed = false; // Start expanded (false = expanded)
     
     // ==================== UTILITY FUNCTIONS ====================
     function getFavicon(url) {
@@ -782,7 +783,7 @@
             for (let i = 0; i < startDay; i++) html += `<div></div>`;
             for (let d = 1; d <= daysInMonth; d++) {
                 const dayOfWeek = (startDay + d - 1) % 7;
-                const isFriSat = dayOfWeek === 5 || dayOfWeek === 6; // Friday=5, Saturday=6
+                const isFriSat = dayOfWeek === 5 || dayOfWeek === 6;
                 const isToday = d === new Date().getDate() && year === new Date().getFullYear() && month === new Date().getMonth();
                 let dayClass = '';
                 if (isFriSat) dayClass = 'friday-sat';
@@ -857,6 +858,15 @@
     
     async function init() {
         try {
+            // Ensure bookmark bar is expanded by default on every load
+            const bookmarkBar = document.getElementById("bookmarkBarContainer");
+            const toggleIcon = document.getElementById("toggleIcon");
+            if (bookmarkBar) {
+                bookmarkBar.classList.remove("collapsed");
+                toggleIcon.className = "fas fa-chevron-up";
+                isBookmarkBarCollapsed = false;
+            }
+            
             document.getElementById('cacheIndicator').innerHTML = '📦 Loading from cache...';
             // Load from cache first (instant)
             const cachedCategories = localStorage.getItem(CACHE_KEY_CATEGORIES);
