@@ -146,7 +146,6 @@
             right: 2px;
             font-size: 8px;
         }
-        /* Tooltip for holiday subject */
         .holiday-tooltip {
             position: fixed;
             background: #1f2937;
@@ -164,7 +163,6 @@
             word-break: break-word;
         }
         
-        /* Folder Popup */
         .folder-popup {
             position: fixed;
             background: #0f0f0f;
@@ -203,7 +201,6 @@
         }
         .back-button i { margin-right: 8px; }
         
-        /* Top bar search */
         .top-bar {
             display: flex;
             gap: 1rem;
@@ -396,6 +393,17 @@
             color: #bbbbbb;
         }
         .empty-cat { color: #4b5563; font-size: 0.85rem; padding: 1rem; text-align: center; }
+        .cache-indicator {
+            position: fixed;
+            bottom: 8px;
+            right: 8px;
+            font-size: 0.6rem;
+            color: #4b5563;
+            background: #0a0a0a;
+            padding: 2px 6px;
+            border-radius: 4px;
+            z-index: 999;
+        }
     </style>
 </head>
 <body>
@@ -453,17 +461,26 @@
     </div>
 
     <div class="categories-section hide-scrollbar" id="categoriesContainer">
-        <div style="text-align: center; padding: 2rem;"><i class="fas fa-spinner fa-pulse"></i> Loading categories...</div>
+        <div class="empty-cat">Loading categories...</div>
     </div>
+    <div class="cache-indicator" id="cacheIndicator">Loading...</div>
 </div>
 
 <script>
+    // ==================== CONFIGURATION ====================
     const CSV_BOOKMARKS_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSxVk_HHPGsnAkM1qeSshRjzRXQ7BhKbk2OFTy-nurrhUQSCd7lz3LFOahHU_nqYd9OIxIu5wkzXEZZ/pub?gid=26452786&single=true&output=csv";
     const SEARCH_ENGINES_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSxVk_HHPGsnAkM1qeSshRjzRXQ7BhKbk2OFTy-nurrhUQSCd7lz3LFOahHU_nqYd9OIxIu5wkzXEZZ/pub?gid=1271015321&single=true&output=csv";
     const JSON_BOOKMARKS_URL = "https://raw.githubusercontent.com/shafin-protic/Web_Bookmarks/refs/heads/main/Web_Bookmarks.json";
     const EDIT_SHEET_URL = "https://docs.google.com/spreadsheets/d/1ErgYkvSzc1CtNPGYAjMV4TeQqMH6tEV-l7DPT6faBPQ/edit?usp=sharing";
     const HOLIDAYS_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTqj7nPwQGlbfP83LpgQf0ysTIO4NCv83liMZI-KtP2YrduRWWzLrv97Nwaj9h1Id1IXMg4LPII14lI/pub?gid=2070009302&single=true&output=csv";
-
+    
+    const CACHE_KEY_CATEGORIES = 'shafin_categories_cache';
+    const CACHE_KEY_HOLIDAYS = 'shafin_holidays_cache';
+    const CACHE_KEY_SEARCH_ENGINES = 'shafin_search_engines_cache';
+    const CACHE_KEY_TOOLBAR = 'shafin_toolbar_cache';
+    const CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 hours
+    
+    // ==================== GLOBAL STATE ====================
     let csvCategoryBookmarks = [];
     let searchEngines = [];
     let currentEngine = null;
@@ -471,8 +488,9 @@
     let toolbarItems = [];
     let activePopup = null;
     let isBookmarkBarCollapsed = false;
-    let holidayMap = new Map(); // dateKey -> { subject, description, startDate, endDate }
-
+    let holidayMap = new Map();
+    
+    // ==================== UTILITY FUNCTIONS ====================
     function getFavicon(url) {
         try { const domain = new URL(url).hostname; return `https://www.google.com/s2/favicons?domain=${domain}&sz=64`; } catch(e) { return ""; }
     }
@@ -480,7 +498,6 @@
         if (!str) return '';
         return str.replace(/[&<>]/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[m]));
     }
-    
     function parseDMYToYMD(dateStr) {
         if (!dateStr) return null;
         let parts = dateStr.split(/[-/]/);
@@ -488,19 +505,36 @@
         let day = parts[0].padStart(2, '0');
         let month = parts[1].padStart(2, '0');
         let year = parts[2];
-        if (year.length === 2) {
-            year = parseInt(year) + 2000;
-        }
+        if (year.length === 2) year = parseInt(year) + 2000;
         return `${year}-${month}-${day}`;
     }
-    
     function formatDateToYMD(date) {
         return date.toISOString().split('T')[0];
     }
-
-    async function fetchCSV(url) {
+    
+    // ==================== CACHED FETCH ====================
+    async function fetchWithCache(url, cacheKey, forceRefresh = false) {
+        if (!forceRefresh) {
+            const cached = localStorage.getItem(cacheKey);
+            if (cached) {
+                try {
+                    const { data, timestamp } = JSON.parse(cached);
+                    if (Date.now() - timestamp < CACHE_DURATION) {
+                        console.log(`Using cached: ${cacheKey}`);
+                        return data;
+                    }
+                } catch(e) {}
+            }
+        }
         const res = await fetch(url);
         const text = await res.text();
+        const data = text;
+        localStorage.setItem(cacheKey, JSON.stringify({ data, timestamp: Date.now() }));
+        return data;
+    }
+    
+    async function fetchCSV(url, cacheKey, forceRefresh = false) {
+        const text = await fetchWithCache(url, cacheKey, forceRefresh);
         const rows = text.split(/\r?\n/).filter(l => l.trim());
         return rows.map(row => {
             const regex = /(".*?"|[^,]*)(,|$)/g;
@@ -515,10 +549,11 @@
             return cols;
         });
     }
-
-    async function loadHolidays() {
+    
+    // ==================== DATA LOADERS WITH CACHE ====================
+    async function loadHolidays(forceRefresh = false) {
         try {
-            const rows = await fetchCSV(HOLIDAYS_CSV_URL);
+            const rows = await fetchCSV(HOLIDAYS_CSV_URL, CACHE_KEY_HOLIDAYS, forceRefresh);
             if (rows.length < 2) return;
             const holidays = new Map();
             for (let i = 1; i < rows.length; i++) {
@@ -528,17 +563,12 @@
                 let endDateStr = row[2];
                 let subject = row[3] || "Holiday";
                 let description = row[4] || "";
-                
                 let startYMD = parseDMYToYMD(startDateStr);
                 let endYMD = endDateStr ? parseDMYToYMD(endDateStr) : startYMD;
-                
                 if (!startYMD) continue;
-                
                 let startDate = new Date(startYMD);
                 let endDate = endYMD ? new Date(endYMD) : startDate;
-                
                 if (isNaN(startDate.getTime())) continue;
-                
                 let current = new Date(startDate);
                 let end = new Date(endDate);
                 while (current <= end) {
@@ -548,25 +578,16 @@
                 }
             }
             holidayMap = holidays;
-            console.log(`Loaded ${holidayMap.size} holiday dates with subjects`);
+            document.getElementById('cacheIndicator').innerHTML = `📅 ${holidayMap.size} holidays cached`;
         } catch(e) { 
-            console.warn("Could not load holidays, using sample data", e);
-            const sampleHolidays = [
-                { date: "2025-01-01", subject: "New Year's Day" },
-                { date: "2025-03-26", subject: "Independence Day" },
-                { date: "2025-04-14", subject: "Bengali New Year" },
-                { date: "2025-05-01", subject: "May Day" },
-                { date: "2025-08-15", subject: "National Mourning Day" },
-                { date: "2025-12-16", subject: "Victory Day" },
-                { date: "2025-12-25", subject: "Christmas Day" }
-            ];
-            sampleHolidays.forEach(h => holidayMap.set(h.date, { subject: h.subject, description: "" }));
+            console.warn("Could not load holidays", e);
+            document.getElementById('cacheIndicator').innerHTML = `⚠️ Using cached holidays`;
         }
     }
-
-    async function loadCsvCategoryBookmarks() {
+    
+    async function loadCsvCategoryBookmarks(forceRefresh = false) {
         try {
-            const rows = await fetchCSV(CSV_BOOKMARKS_URL);
+            const rows = await fetchCSV(CSV_BOOKMARKS_URL, CACHE_KEY_CATEGORIES, forceRefresh);
             if (rows.length < 2) return [];
             const data = [];
             for (let i = 1; i < rows.length; i++) {
@@ -583,10 +604,10 @@
             return data;
         } catch(e) { console.error(e); return []; }
     }
-
-    async function loadSearchEngines() {
+    
+    async function loadSearchEngines(forceRefresh = false) {
         try {
-            const rows = await fetchCSV(SEARCH_ENGINES_URL);
+            const rows = await fetchCSV(SEARCH_ENGINES_URL, CACHE_KEY_SEARCH_ENGINES, forceRefresh);
             if (rows.length < 2) return [{ name: "Google", urlTemplate: "https://www.google.com/search?q=%s", active: true, icon: "" }];
             const engines = [];
             for (let i = 1; i < rows.length; i++) {
@@ -606,7 +627,8 @@
             return engines;
         } catch(e) { return [{ name: "Google", urlTemplate: "https://www.google.com/search?q=%s", active: true, icon: "" }]; }
     }
-
+    
+    // ==================== JSON BOOKMARK PARSING ====================
     function extractToolbarChildren(jsonData) {
         if (!jsonData || !jsonData.children) return [];
         function findToolbar(node) {
@@ -616,7 +638,7 @@
         }
         return findToolbar(jsonData) || [];
     }
-
+    
     function convertNode(node) {
         if (!node) return null;
         const item = { title: node.title || "", type: node.typeCode === 2 ? "folder" : (node.typeCode === 1 ? "bookmark" : null), uri: node.uri, children: [], iconUri: node.iconUri };
@@ -630,7 +652,32 @@
         if (item.type === "bookmark" && item.uri && item.uri.startsWith("http")) return item;
         return null;
     }
-
+    
+    async function loadToolbar(forceRefresh = false) {
+        try {
+            let jsonData;
+            if (!forceRefresh) {
+                const cached = localStorage.getItem(CACHE_KEY_TOOLBAR);
+                if (cached) {
+                    const { data, timestamp } = JSON.parse(cached);
+                    if (Date.now() - timestamp < CACHE_DURATION) {
+                        jsonData = data;
+                    }
+                }
+            }
+            if (!jsonData) {
+                const res = await fetch(JSON_BOOKMARKS_URL);
+                jsonData = await res.json();
+                localStorage.setItem(CACHE_KEY_TOOLBAR, JSON.stringify({ data: jsonData, timestamp: Date.now() }));
+            }
+            const toolbarRaw = extractToolbarChildren(jsonData);
+            const items = [];
+            for (const child of toolbarRaw) { const conv = convertNode(child); if (conv) items.push(conv); }
+            return items;
+        } catch(e) { console.error(e); return []; }
+    }
+    
+    // ==================== UI RENDERING ====================
     function flattenForSearch(items, arr = []) {
         for (const item of items) {
             if (item.type === "bookmark" && item.uri) arr.push({ name: item.title, url: item.uri });
@@ -638,11 +685,11 @@
         }
         return arr;
     }
-
+    
     function closePopup() {
         if (activePopup) { activePopup.remove(); activePopup = null; }
     }
-
+    
     function showFolderPopup(folderItem, buttonElement, parentFolder = null) {
         if (activePopup) activePopup.remove();
         const popup = document.createElement('div');
@@ -692,7 +739,7 @@
         };
         setTimeout(() => document.addEventListener('click', closeHandler), 100);
     }
-
+    
     function renderBookmarkBar(items) {
         const container = document.getElementById("bookmarkBarContainer");
         if (!items || items.length === 0) { container.innerHTML = '<div class="bookmark-bar-inner">No toolbar bookmarks</div>'; return; }
@@ -717,7 +764,7 @@
             });
         });
     }
-
+    
     function renderCategories() {
         const container = document.getElementById("categoriesContainer");
         const categories = ["Cat A", "Cat B", "Cat C", "Cat D", "Cat E"];
@@ -738,7 +785,7 @@
         if (!hasAny) html = '<div class="empty-cat">No categories found.</div>';
         container.innerHTML = html;
     }
-
+    
     function updateBookmarkSearchPopup(query) {
         const dropdown = document.getElementById("bookmarkSearchDropdown");
         if (!query.trim()) { dropdown.style.display = "none"; return; }
@@ -752,7 +799,7 @@
         dropdown.innerHTML = html;
         dropdown.style.display = "block";
     }
-
+    
     function renderEngineDropdown() {
         const dropdown = document.getElementById("engineDropdown");
         let html = "";
@@ -775,14 +822,14 @@
             });
         });
     }
-
+    
     function performSearch() {
         const query = document.getElementById("engineQueryInput").value;
         if (!query.trim()) return;
         const engine = currentEngine || searchEngines[0];
         window.open(engine.urlTemplate.replace("%s", encodeURIComponent(query)), "_blank");
     }
-
+    
     function toggleBookmarkBar() {
         const bookmarkBar = document.getElementById("bookmarkBarContainer");
         const toggleIcon = document.getElementById("toggleIcon");
@@ -795,21 +842,8 @@
             toggleIcon.className = "fas fa-chevron-up";
         }
     }
-    document.getElementById("toggleIconBtn").addEventListener("click", toggleBookmarkBar);
-
-    function updateClock() {
-        const now = new Date();
-        let hours = now.getHours() % 12 || 12;
-        const ampm = now.getHours() >= 12 ? 'PM' : 'AM';
-        const minutes = String(now.getMinutes()).padStart(2,'0');
-        const seconds = String(now.getSeconds()).padStart(2,'0');
-        document.getElementById("clockDisplay").innerText = `${hours}:${minutes}:${seconds} ${ampm}`;
-        const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-        document.getElementById("dateDisplay").innerText = now.toLocaleDateString('en-US', options);
-    }
-    setInterval(updateClock, 1000);
-    updateClock();
-
+    
+    // ==================== CALENDAR ====================
     let activeCalendar = null;
     let activeTooltip = null;
     
@@ -826,10 +860,7 @@
     }
     
     function hideTooltip() {
-        if (activeTooltip) {
-            activeTooltip.remove();
-            activeTooltip = null;
-        }
+        if (activeTooltip) { activeTooltip.remove(); activeTooltip = null; }
     }
     
     function showCalendarPopup(anchorBtn) {
@@ -863,8 +894,6 @@
             }
             html += `</div>`;
             popup.innerHTML = html;
-            
-            // Add hover tooltips for holidays
             popup.querySelectorAll('.calendar-day[data-holiday-subject]').forEach(dayEl => {
                 const subject = dayEl.getAttribute('data-holiday-subject');
                 if (subject) {
@@ -872,7 +901,6 @@
                     dayEl.addEventListener('mouseleave', hideTooltip);
                 }
             });
-            
             popup.querySelector('.prevCalBtn').onclick = (e) => { e.stopPropagation(); let nm = month - 1; let ny = year; if (nm < 0) { nm = 11; ny--; } renderCal(ny, nm); };
             popup.querySelector('.nextCalBtn').onclick = (e) => { e.stopPropagation(); let nm = month + 1; let ny = year; if (nm > 11) { nm = 0; ny++; } renderCal(ny, nm); };
         }
@@ -892,36 +920,168 @@
         };
         setTimeout(() => document.addEventListener('click', closeHandler), 100);
     }
-
+    
+    // ==================== CLOCK ====================
+    function updateClock() {
+        const now = new Date();
+        let hours = now.getHours() % 12 || 12;
+        const ampm = now.getHours() >= 12 ? 'PM' : 'AM';
+        const minutes = String(now.getMinutes()).padStart(2,'0');
+        const seconds = String(now.getSeconds()).padStart(2,'0');
+        document.getElementById("clockDisplay").innerText = `${hours}:${minutes}:${seconds} ${ampm}`;
+        const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+        document.getElementById("dateDisplay").innerText = now.toLocaleDateString('en-US', options);
+    }
+    
+    // ==================== REFRESH ====================
+    async function refreshAll() {
+        document.getElementById('cacheIndicator').innerHTML = '🔄 Refreshing...';
+        await Promise.all([
+            loadHolidays(true),
+            loadCsvCategoryBookmarks(true),
+            loadSearchEngines(true),
+            (async () => { toolbarItems = await loadToolbar(true); })()
+        ]);
+        csvCategoryBookmarks = await loadCsvCategoryBookmarks(true);
+        searchEngines = await loadSearchEngines(true);
+        toolbarItems = await loadToolbar(true);
+        renderCategories();
+        renderBookmarkBar(toolbarItems);
+        renderEngineDropdown();
+        allBookmarksForSearch = [];
+        for (const item of toolbarItems) flattenForSearch([item], allBookmarksForSearch);
+        document.getElementById('cacheIndicator').innerHTML = `✅ Updated ${new Date().toLocaleTimeString()}`;
+        setTimeout(() => { if(document.getElementById('cacheIndicator').innerHTML.includes('Updated')) document.getElementById('cacheIndicator').innerHTML = `📚 Cached`; }, 3000);
+    }
+    
+    // ==================== INIT ====================
+    document.getElementById("toggleIconBtn").addEventListener("click", toggleBookmarkBar);
     document.getElementById("calendarBtn").addEventListener("click", (e) => { e.stopPropagation(); showCalendarPopup(e.currentTarget); });
     document.getElementById("editSheetBtn").addEventListener("click", () => { window.open(EDIT_SHEET_URL, "_blank"); });
-    async function refreshCsv() {
-        document.getElementById("categoriesContainer").innerHTML = '<div style="text-align:center;padding:2rem"><i class="fas fa-spinner fa-pulse"></i> Refreshing...</div>';
-        csvCategoryBookmarks = await loadCsvCategoryBookmarks();
-        renderCategories();
-    }
-    document.getElementById("refreshCsvBtn").addEventListener("click", refreshCsv);
-
+    document.getElementById("refreshCsvBtn").addEventListener("click", refreshAll);
+    document.getElementById("engineSearchBtn").addEventListener("click", performSearch);
+    document.getElementById("engineQueryInput").addEventListener("keypress", e => { if (e.key === "Enter") performSearch(); });
+    document.getElementById("bookmarkSearchInput").addEventListener("input", e => updateBookmarkSearchPopup(e.target.value));
+    document.getElementById("clearBookmarkSearch").addEventListener("click", () => { document.getElementById("bookmarkSearchInput").value = ""; updateBookmarkSearchPopup(""); });
+    
+    setInterval(updateClock, 1000);
+    updateClock();
+    
     async function init() {
         try {
-            await loadHolidays();
-            csvCategoryBookmarks = await loadCsvCategoryBookmarks();
-            renderCategories();
-            searchEngines = await loadSearchEngines();
-            if (!searchEngines.some(e => e.active)) searchEngines[0].active = true;
-            currentEngine = searchEngines.find(e => e.active);
-            document.getElementById("currentEngineIcon").src = currentEngine.icon && currentEngine.icon.startsWith("http") ? currentEngine.icon : getFavicon(currentEngine.urlTemplate);
-            renderEngineDropdown();
-            const jsonRes = await fetch(JSON_BOOKMARKS_URL);
-            const jsonData = await jsonRes.json();
-            const toolbarRaw = extractToolbarChildren(jsonData);
-            toolbarItems = [];
-            for (const child of toolbarRaw) { const conv = convertNode(child); if (conv) toolbarItems.push(conv); }
-            renderBookmarkBar(toolbarItems);
-            allBookmarksForSearch = [];
-            for (const item of toolbarItems) flattenForSearch([item], allBookmarksForSearch);
-            document.getElementById("engineSearchBtn").addEventListener("click", performSearch);
-            document.getElementById("engineQueryInput").addEventListener("keypress", e => { if (e.key === "Enter") performSearch(); });
+            document.getElementById('cacheIndicator').innerHTML = '📦 Loading from cache...';
+            // Load from cache first (instant)
+            const cachedCategories = localStorage.getItem(CACHE_KEY_CATEGORIES);
+            if (cachedCategories) {
+                try {
+                    const { data } = JSON.parse(cachedCategories);
+                    if (data) {
+                        const rows = data.split(/\r?\n/);
+                        const parsed = [];
+                        for (let i = 1; i < rows.length; i++) {
+                            const parts = rows[i].split(',');
+                            if (parts.length >= 3) {
+                                let name = parts[0].replace(/^"|"$/g, '');
+                                let url = parts[1].replace(/^"|"$/g, '');
+                                let category = parts[2] ? parts[2].replace(/^"|"$/g, '') : "Uncategorized";
+                                if (name && url && url.startsWith("http")) {
+                                    parsed.push({ name, url, category: category.trim(), icon: "" });
+                                }
+                            }
+                        }
+                        if (parsed.length) csvCategoryBookmarks = parsed;
+                        renderCategories();
+                    }
+                } catch(e) {}
+            }
+            
+            const cachedToolbar = localStorage.getItem(CACHE_KEY_TOOLBAR);
+            if (cachedToolbar) {
+                try {
+                    const { data } = JSON.parse(cachedToolbar);
+                    if (data) {
+                        const toolbarRaw = extractToolbarChildren(data);
+                        const items = [];
+                        for (const child of toolbarRaw) { const conv = convertNode(child); if (conv) items.push(conv); }
+                        if (items.length) toolbarItems = items;
+                        renderBookmarkBar(toolbarItems);
+                        allBookmarksForSearch = [];
+                        for (const item of toolbarItems) flattenForSearch([item], allBookmarksForSearch);
+                    }
+                } catch(e) {}
+            }
+            
+            const cachedSearch = localStorage.getItem(CACHE_KEY_SEARCH_ENGINES);
+            if (cachedSearch) {
+                try {
+                    const { data } = JSON.parse(cachedSearch);
+                    if (data) {
+                        const rows = data.split(/\r?\n/);
+                        const engines = [];
+                        for (let i = 1; i < rows.length; i++) {
+                            const parts = rows[i].split(',');
+                            if (parts.length >= 3) {
+                                let name = parts[0].replace(/^"|"$/g, '');
+                                let urlTemplate = parts[1].replace(/^"|"$/g, '');
+                                let useIt = parts[2]?.toLowerCase();
+                                if (urlTemplate && !urlTemplate.includes("%s")) {
+                                    urlTemplate += urlTemplate.includes("?") ? "&q=%s" : "?q=%s";
+                                }
+                                const active = (useIt === "yes" || useIt === "y" || useIt === "true");
+                                engines.push({ name, urlTemplate, active, icon: "" });
+                            }
+                        }
+                        if (engines.length) searchEngines = engines;
+                        if (!searchEngines.some(e => e.active)) searchEngines[0].active = true;
+                        currentEngine = searchEngines.find(e => e.active);
+                        document.getElementById("currentEngineIcon").src = getFavicon(currentEngine.urlTemplate);
+                        renderEngineDropdown();
+                    }
+                } catch(e) {}
+            }
+            
+            const cachedHolidays = localStorage.getItem(CACHE_KEY_HOLIDAYS);
+            if (cachedHolidays) {
+                try {
+                    const { data } = JSON.parse(cachedHolidays);
+                    if (data) {
+                        const rows = data.split(/\r?\n/);
+                        const holidays = new Map();
+                        for (let i = 1; i < rows.length; i++) {
+                            const parts = rows[i].split(',');
+                            if (parts.length >= 2) {
+                                let startDateStr = parts[1]?.replace(/^"|"$/g, '');
+                                let subject = parts[3]?.replace(/^"|"$/g, '') || "Holiday";
+                                let startYMD = parseDMYToYMD(startDateStr);
+                                if (startYMD) holidays.set(startYMD, { subject, description: "" });
+                            }
+                        }
+                        if (holidays.size) holidayMap = holidays;
+                    }
+                } catch(e) {}
+            }
+            
+            document.getElementById('cacheIndicator').innerHTML = '🔄 Background update...';
+            // Background refresh
+            Promise.all([
+                loadHolidays(true),
+                loadCsvCategoryBookmarks(true),
+                loadSearchEngines(true),
+                loadToolbar(true)
+            ]).then(async () => {
+                csvCategoryBookmarks = await loadCsvCategoryBookmarks(true);
+                searchEngines = await loadSearchEngines(true);
+                toolbarItems = await loadToolbar(true);
+                await loadHolidays(true);
+                renderCategories();
+                renderBookmarkBar(toolbarItems);
+                renderEngineDropdown();
+                allBookmarksForSearch = [];
+                for (const item of toolbarItems) flattenForSearch([item], allBookmarksForSearch);
+                document.getElementById('cacheIndicator').innerHTML = `✅ Live data loaded`;
+                setTimeout(() => { if(document.getElementById('cacheIndicator').innerHTML.includes('Live')) document.getElementById('cacheIndicator').innerHTML = `📚 Cached`; }, 2000);
+            }).catch(e => console.warn("Background refresh failed", e));
+            
             const engineBtn = document.getElementById("engineSelectorBtn");
             const engineDrop = document.getElementById("engineDropdown");
             engineBtn.addEventListener("click", (e) => { e.stopPropagation(); engineDrop.style.display = engineDrop.style.display === "none" ? "block" : "none"; });
@@ -930,8 +1090,7 @@
                 if (!document.querySelector(".bookmark-search-wrapper").contains(e.target)) document.getElementById("bookmarkSearchDropdown").style.display = "none";
                 closePopup();
             });
-            document.getElementById("bookmarkSearchInput").addEventListener("input", e => updateBookmarkSearchPopup(e.target.value));
-            document.getElementById("clearBookmarkSearch").addEventListener("click", () => { document.getElementById("bookmarkSearchInput").value = ""; updateBookmarkSearchPopup(""); });
+            
             const profileImg = document.getElementById("profileImage");
             if (profileImg.complete && profileImg.naturalHeight === 0) {
                 profileImg.style.display = 'none';
