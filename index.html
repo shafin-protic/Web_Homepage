@@ -155,16 +155,15 @@
         .work-bottom-row {
             display: flex;
             align-items: center;
-            justify-content: space-between;
+            justify-content: center;
             font-size: 0.5rem;
             color: #6b7280;
             line-height: 1.1;
         }
         .work-hours-label { display: flex; align-items: center; gap: 0.22rem; }
         .work-hours-label i { font-size: 0.48rem; color: #4b5563; }
-        .work-day-label { font-weight: 600; color: #9ca3af; }
 
-        /* === SALAH WIDGET (new compact design) === */
+        /* === SALAH WIDGET === */
         .salah-widget {
             display: flex;
             align-items: center;
@@ -174,7 +173,12 @@
             border-radius: 0.9rem;
             padding: 0.35rem 0.7rem;
             transition: border-color 0.4s ease, box-shadow 0.4s ease;
-            min-width: 210px;
+            min-width: 200px;
+            cursor: pointer;
+            user-select: none;
+        }
+        .salah-widget:hover {
+            background: #0f0f0f;
         }
         .salah-widget.active {
             border-color: rgba(16, 185, 129, 0.35);
@@ -299,14 +303,141 @@
             font-family: monospace;
         }
         .salah-time-range i { font-size: 0.45rem; color: #4b5563; }
-        .salah-location {
+
+        /* === SALAH POPUP === */
+        .salah-popup {
+            position: fixed;
+            background: #0f0f0f;
+            border: 1px solid #2c2c2c;
+            border-radius: 1rem;
+            padding: 0.6rem;
+            min-width: 300px;
+            max-width: 340px;
+            z-index: 10003;
+            box-shadow: 0 15px 40px rgba(0,0,0,0.7);
+        }
+        .salah-popup-header {
             display: flex;
             align-items: center;
-            gap: 0.2rem;
-            font-weight: 600;
+            gap: 0.4rem;
+            padding: 0.3rem 0.5rem 0.55rem;
+            border-bottom: 1px solid #1e1e1e;
+            margin-bottom: 0.4rem;
+            font-size: 0.66rem;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
             color: #9ca3af;
         }
-        .salah-location i { color: #3b82f6; font-size: 0.5rem; }
+        .salah-popup-header i { color: #3b82f6; font-size: 0.7rem; }
+        .salah-popup-header .popup-loc {
+            margin-left: auto;
+            font-size: 0.55rem;
+            font-weight: 500;
+            color: #6b7280;
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+            text-transform: none;
+            letter-spacing: 0;
+        }
+        .salah-popup-header .popup-loc i { color: #3b82f6; font-size: 0.55rem; }
+        .salah-popup-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.15rem;
+        }
+        .salah-popup-row {
+            display: flex;
+            align-items: center;
+            gap: 0.55rem;
+            padding: 0.5rem 0.55rem;
+            border-radius: 0.55rem;
+            transition: background 0.15s ease;
+        }
+        .salah-popup-row.current {
+            background: linear-gradient(90deg, rgba(16, 185, 129, 0.14), rgba(16, 185, 129, 0.04));
+            border: 1px solid rgba(16, 185, 129, 0.3);
+        }
+        .salah-popup-row.forbidden-row {
+            background: rgba(239, 68, 68, 0.08);
+            border: 1px solid rgba(239, 68, 68, 0.25);
+        }
+        .salah-popup-icon {
+            width: 30px;
+            height: 30px;
+            border-radius: 0.45rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            font-size: 0.82rem;
+            color: #9ca3af;
+            background: #141414;
+        }
+        .salah-popup-row.current .salah-popup-icon {
+            background: linear-gradient(135deg, #059669, #10b981);
+            color: #ffffff;
+            box-shadow: 0 2px 6px rgba(16, 185, 129, 0.3);
+        }
+        .salah-popup-row.forbidden-row .salah-popup-icon {
+            background: linear-gradient(135deg, #b91c1c, #ef4444);
+            color: #ffffff;
+            box-shadow: 0 2px 6px rgba(239, 68, 68, 0.3);
+        }
+        .salah-popup-info {
+            display: flex;
+            flex-direction: column;
+            gap: 0.1rem;
+            flex: 1;
+            min-width: 0;
+        }
+        .salah-popup-name {
+            font-size: 0.74rem;
+            font-weight: 600;
+            color: #e5e7eb;
+            letter-spacing: 0.2px;
+        }
+        .salah-popup-row.current .salah-popup-name { color: #34d399; }
+        .salah-popup-row.forbidden-row .salah-popup-name { color: #f87171; }
+        .salah-popup-range {
+            font-size: 0.55rem;
+            color: #6b7280;
+            display: flex;
+            align-items: center;
+            gap: 0.28rem;
+            font-family: monospace;
+            letter-spacing: 0.1px;
+        }
+        .salah-popup-range i {
+            font-size: 0.4rem;
+            color: #4b5563;
+        }
+        .salah-popup-row.current .salah-popup-range { color: #6ee7b7; }
+        .salah-popup-row.current .salah-popup-range i { color: #34d399; }
+        .salah-popup-row.forbidden-row .salah-popup-range { color: #fca5a5; }
+        .salah-popup-row.forbidden-row .salah-popup-range i { color: #ef4444; }
+        .salah-popup-divider {
+            height: 1px;
+            background: #1a1a1a;
+            margin: 0.35rem 0.3rem;
+        }
+        .salah-popup-footer {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.4rem 0.55rem 0.2rem;
+            border-top: 1px solid #1e1e1e;
+            margin-top: 0.35rem;
+            font-size: 0.5rem;
+            color: #6b7280;
+        }
+        .salah-popup-footer .method-label {
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+        }
+        .salah-popup-footer .method-label i { color: #3b82f6; font-size: 0.5rem; }
 
         .clock-date { text-align: right; }
         .clock { font-size: 1.2rem; font-weight: 600; font-family: monospace; }
@@ -628,7 +759,7 @@
             .work-status { font-size: 0.54rem; }
             .work-timer { font-size: 0.58rem; }
             .work-bottom-row { font-size: 0.46rem; }
-            .salah-widget { min-width: 190px; padding: 0.3rem 0.6rem; gap: 0.5rem; }
+            .salah-widget { min-width: 180px; padding: 0.3rem 0.6rem; gap: 0.5rem; }
             .salah-icon-tile { width: 34px; height: 34px; font-size: 0.9rem; }
         }
         @media (max-width: 900px) {
@@ -640,12 +771,11 @@
             .work-day-tile .tile-label { display: none; }
             .work-info { min-width: 78px; }
             .work-bottom-row { display: none; }
-            .salah-widget { min-width: 165px; padding: 0.25rem 0.5rem; gap: 0.45rem; }
+            .salah-widget { min-width: 160px; padding: 0.25rem 0.5rem; gap: 0.45rem; }
             .salah-icon-tile { width: 30px; height: 30px; font-size: 0.82rem; }
             .salah-name { font-size: 0.6rem; }
             .salah-countdown { font-size: 0.6rem; }
             .salah-time-range { font-size: 0.46rem; }
-            .salah-location { display: none; }
         }
         @media (max-width: 768px) {
             .app { padding: 0.8rem 1rem; gap: 0.8rem; }
@@ -668,7 +798,7 @@
             .work-info { min-width: 70px; }
             .work-status { font-size: 0.5rem; }
             .work-timer { font-size: 0.52rem; }
-            .salah-widget { min-width: 145px; padding: 0.2rem 0.4rem; gap: 0.35rem; }
+            .salah-widget { min-width: 140px; padding: 0.2rem 0.4rem; gap: 0.35rem; }
             .salah-icon-tile { width: 26px; height: 26px; font-size: 0.72rem; }
             .salah-name { font-size: 0.54rem; }
             .salah-countdown { font-size: 0.54rem; }
@@ -719,12 +849,11 @@
                     </div>
                     <div class="work-bottom-row">
                         <div class="work-hours-label"><i class="fas fa-clock"></i><span>09:00 AM – 04:00 PM</span></div>
-                        <div class="work-day-label" id="workDayLabel">—</div>
                     </div>
                 </div>
             </div>
-            <!-- === SALAH WIDGET (compact, current wakth only) === -->
-            <div class="salah-widget active" id="salahWidget" title="Current prayer time — Patuakhali, Bangladesh">
+            <!-- === SALAH WIDGET === -->
+            <div class="salah-widget active" id="salahWidget" title="Click to view all prayer times">
                 <div class="salah-icon-tile active" id="salahIconTile">
                     <i class="fas fa-moon" id="salahIcon"></i>
                 </div>
@@ -743,9 +872,6 @@
                             <i class="fas fa-play"></i><span id="salahStartTime">--:--</span>
                             <i class="fas fa-arrow-right" style="font-size:0.4rem;color:#4b5563;"></i>
                             <i class="fas fa-stop"></i><span id="salahEndTime">--:--</span>
-                        </div>
-                        <div class="salah-location" id="salahLocation">
-                            <i class="fas fa-map-marker-alt"></i><span>Patuakhali</span>
                         </div>
                     </div>
                 </div>
@@ -795,7 +921,6 @@
     const PRAYER_TIMEZONE = 6;
     const LOCATION_NAME = "Patuakhali";
 
-    // === WORK HOURS ===
     const WORK_DAYS = [1, 2, 3, 4];
     const WORK_START_HOUR = 9;
     const WORK_END_HOUR = 16;
@@ -821,13 +946,14 @@
         '#a855f7','#eab308','#0ea5e9','#f43f5e','#22c55e'
     ];
 
-    // Wakth visual metadata
+    // Icons: use only Font Awesome 6 Free solid icons that are guaranteed available.
+    // Maghrib: use fa-cloud-moon (sunset scene), since fa-sunset is a Pro icon.
     const WAKTH_META = {
-        fajr:    { name: 'Fajr',    icon: 'fa-moon' },
-        dhuhr:   { name: 'Dhuhr',   icon: 'fa-sun' },
-        asr:     { name: 'Asr',     icon: 'fa-cloud-sun' },
-        maghrib: { name: 'Maghrib', icon: 'fa-sunset' },
-        isha:    { name: 'Isha',    icon: 'fa-star' }
+        fajr:    { name: 'Fajr',    icon: 'fa-moon',       sub: 'Dawn' },
+        dhuhr:   { name: 'Dhuhr',   icon: 'fa-sun',        sub: 'Noon' },
+        asr:     { name: 'Asr',     icon: 'fa-cloud-sun',  sub: 'Afternoon' },
+        maghrib: { name: 'Maghrib', icon: 'fa-cloud-moon', sub: 'Sunset' },
+        isha:    { name: 'Isha',    icon: 'fa-star',       sub: 'Night' }
     };
 
     // ==================== STATE ====================
@@ -841,9 +967,10 @@
     let activeFolderPopup = null;
     let activeFolderBtn = null;
     let activeCalendar = null;
+    let activeSalahPopup = null;
     let cachedPrayerDay = null;
     let cachedTimes = null;
-    let lastSalahState = null; // { wakth, mode } — to avoid redundant DOM writes
+    let lastSalahState = null;
 
     const dom = {};
 
@@ -1281,6 +1408,138 @@
         activeCalendar = popup;
     }
 
+    // ==================== SALAH POPUP ====================
+    function closeSalahPopup() {
+        if (activeSalahPopup) {
+            activeSalahPopup.remove();
+            activeSalahPopup = null;
+        }
+    }
+
+    // Helper: given an end hour (which may exceed 24 for Isha), format it.
+    // For display we show the actual clock time of the boundary.
+    function fmtBoundary(h) {
+        return format12Hour(((h % 24) + 24) % 24);
+    }
+
+    function showSalahPopup(anchorBtn) {
+        if (activeSalahPopup) {
+            closeSalahPopup();
+            return;
+        }
+
+        const now = new Date();
+        const dayKey = now.toDateString();
+        if (cachedPrayerDay !== dayKey) {
+            cachedTimes = computePrayerTimes(
+                new Date(now.getFullYear(), now.getMonth(), now.getDate()),
+                PRAYER_LAT, PRAYER_LNG, PRAYER_TIMEZONE
+            );
+            cachedPrayerDay = dayKey;
+        }
+
+        const state = getCurrentSalahState(now, cachedTimes);
+        const raw = cachedTimes.raw;
+
+        // Build boundary map for each wakth: startRaw → endRaw (in local decimal hours)
+        const boundaries = {
+            fajr:    { start: raw.fajr,    end: raw.dhuhr },
+            dhuhr:   { start: raw.dhuhr,   end: raw.asr },
+            asr:     { start: raw.asr,     end: raw.maghrib },
+            maghrib: { start: raw.maghrib, end: raw.isha },
+            isha:    { start: raw.isha,    end: raw.fajr + 24 } // Isha ends at next day's Fajr
+        };
+
+        const popup = document.createElement("div");
+        popup.className = "salah-popup";
+
+        const order = ['fajr', 'dhuhr', 'asr', 'maghrib', 'isha'];
+
+        let chunks = [];
+        chunks.push(`<div class="salah-popup-header">
+            <i class="fas fa-mosque"></i>
+            <span>Prayer Times</span>
+            <span class="popup-loc"><i class="fas fa-map-marker-alt"></i>${escapeHtml(LOCATION_NAME)}</span>
+        </div>`);
+        chunks.push(`<div class="salah-popup-list">`);
+
+        // --- Five wakth rows: name + start → end range ---
+        for (const w of order) {
+            const meta = WAKTH_META[w];
+            const isCurrent = (state.wakth === w && !state.forbidden);
+            const rowClass = isCurrent ? 'current' : '';
+            const b = boundaries[w];
+            const rangeStart = fmtBoundary(b.start);
+            const rangeEnd = fmtBoundary(b.end);
+            chunks.push(`<div class="salah-popup-row ${rowClass}">
+                <div class="salah-popup-icon"><i class="fas ${meta.icon}"></i></div>
+                <div class="salah-popup-info">
+                    <div class="salah-popup-name">${meta.name}</div>
+                    <div class="salah-popup-range">
+                        <span>${escapeHtml(rangeStart)}</span>
+                        <i class="fas fa-arrow-right"></i>
+                        <span>${escapeHtml(rangeEnd)}</span>
+                    </div>
+                </div>
+            </div>`);
+        }
+
+        // --- Divider ---
+        chunks.push(`<div class="salah-popup-divider"></div>`);
+
+        // --- Forbidden intervals: for each we show the actual short window ---
+        // Sunrise: sunrise → sunrise + 20 min
+        const sunriseStart = raw.sunrise;
+        const sunriseEnd = raw.sunrise + 20/60;
+        // Zenith: dhuhr - 10 min → dhuhr
+        const zenithStart = raw.dhuhr - 10/60;
+        const zenithEnd = raw.dhuhr;
+        // Sunset: maghrib - 10 min → maghrib
+        const sunsetStart = raw.maghrib - 10/60;
+        const sunsetEnd = raw.maghrib;
+
+        const forbiddenRows = [
+            { name: 'Sunrise (Forbidden)', sub: 'Shuruq — pause prayer', start: sunriseStart, end: sunriseEnd, icon: 'fa-exclamation-triangle' },
+            { name: 'Zenith (Forbidden)',  sub: 'Istiwa — solar noon',   start: zenithStart,  end: zenithEnd,  icon: 'fa-sun' },
+            { name: 'Sunset (Forbidden)',  sub: 'Ghurub — pause prayer', start: sunsetStart,  end: sunsetEnd,  icon: 'fa-cloud-moon' }
+        ];
+
+        for (const f of forbiddenRows) {
+            chunks.push(`<div class="salah-popup-row forbidden-row">
+                <div class="salah-popup-icon"><i class="fas ${f.icon}"></i></div>
+                <div class="salah-popup-info">
+                    <div class="salah-popup-name">${escapeHtml(f.name)}</div>
+                    <div class="salah-popup-range">
+                        <span>${escapeHtml(fmtBoundary(f.start))}</span>
+                        <i class="fas fa-arrow-right"></i>
+                        <span>${escapeHtml(fmtBoundary(f.end))}</span>
+                    </div>
+                </div>
+            </div>`);
+        }
+
+        chunks.push(`</div>`);
+
+        // --- Footer: method info ---
+        chunks.push(`<div class="salah-popup-footer">
+            <span class="method-label"><i class="fas fa-calculator"></i>Salafi (Fajr 18°, Isha 17°)</span>
+            <span>Asr: Shafi'i</span>
+        </div>`);
+
+        popup.innerHTML = chunks.join('');
+        document.body.appendChild(popup);
+
+        const rect = anchorBtn.getBoundingClientRect();
+        const popupWidth = popup.offsetWidth || 300;
+        let left = rect.right - popupWidth;
+        left = Math.max(8, Math.min(left, window.innerWidth - popupWidth - 8));
+        popup.style.position = "fixed";
+        popup.style.top = `${rect.bottom + 8}px`;
+        popup.style.left = `${left}px`;
+
+        activeSalahPopup = popup;
+    }
+
     // ==================== CLOCK ====================
     function updateClock() {
         const now = new Date();
@@ -1309,7 +1568,6 @@
         const statusIcon = dom.workStatusIcon;
         const timerEl = dom.workTimer;
         const fillEl = dom.workProgressFill;
-        const dayLabel = dom.workDayLabel;
         const tile = dom.workDayTile;
         const tilePct = dom.workTilePct;
         const tileLabel = dom.workTileLabel;
@@ -1318,8 +1576,6 @@
 
         const dateKey = now.toDateString();
         tile.style.background = getDayTileColor(dateKey);
-
-        dayLabel.textContent = DAY_NAMES_SHORT[day];
 
         let progress = 0;
         let inWork = false;
@@ -1446,18 +1702,10 @@
         };
     }
 
-    // Determine current wakth, its window, and forbidden intervals.
-    // Returns: { wakth, startRaw, endRaw, forbidden: bool, forbiddenReason: 'sunrise'|'zenith'|'sunset'|null }
     function getCurrentSalahState(now, times) {
         const raw = times.raw;
         const h = now.getHours() + now.getMinutes()/60 + now.getSeconds()/3600;
 
-        // Wakth windows (in local decimal hours)
-        // Fajr: fajr → dhuhr
-        // Dhuhr: dhuhr → asr
-        // Asr: asr → maghrib
-        // Maghrib: maghrib → isha
-        // Isha: isha → fajr (next day) — we treat end as 24 + fajr for progress
         let wakth, startRaw, endRaw;
         if (h >= raw.fajr && h < raw.dhuhr) {
             wakth = 'fajr'; startRaw = raw.fajr; endRaw = raw.dhuhr;
@@ -1468,12 +1716,8 @@
         } else if (h >= raw.maghrib && h < raw.isha) {
             wakth = 'maghrib'; startRaw = raw.maghrib; endRaw = raw.isha;
         } else {
-            // Isha window: from isha until next day's fajr
             wakth = 'isha'; startRaw = raw.isha; endRaw = raw.fajr + 24;
-            // If we're past midnight, shift our current hour into the next day's frame
             if (h < raw.fajr) {
-                // currently after midnight but before fajr — same isha window
-                // startRaw stays as yesterday's isha; we need current h + 24 to compute progress
                 return {
                     wakth: 'isha',
                     startRaw: raw.isha,
@@ -1485,17 +1729,13 @@
             }
         }
 
-        // Forbidden windows (relative to wakth times)
         let forbidden = false, forbiddenReason = null;
-        // Sunrise: sunrise → sunrise + 20 min
         if (h >= raw.sunrise && h < (raw.sunrise + 20/60)) {
             forbidden = true; forbiddenReason = 'sunrise';
         }
-        // Zenith: dhuhr - 10 min → dhuhr
         else if (h >= (raw.dhuhr - 10/60) && h < raw.dhuhr) {
             forbidden = true; forbiddenReason = 'zenith';
         }
-        // Sunset: maghrib - 10 min → maghrib
         else if (h >= (raw.maghrib - 10/60) && h < raw.maghrib) {
             forbidden = true; forbiddenReason = 'sunset';
         }
@@ -1518,17 +1758,14 @@
         const state = getCurrentSalahState(now, cachedTimes);
         const meta = WAKTH_META[state.wakth];
 
-        // Compute progress within the wakth window
         let progress = ((state.current - state.startRaw) / (state.endRaw - state.startRaw)) * 100;
         progress = Math.max(0, Math.min(100, progress));
 
-        // Time remaining until end of wakth
         const remainingH = state.endRaw - state.current;
         const rh = Math.floor(remainingH);
         const rm = Math.floor((remainingH - rh) * 60);
         const countdownText = `${rh}h ${String(rm).padStart(2,'0')}m left`;
 
-        // Determine mode
         let mode;
         if (state.forbidden) {
             mode = 'forbidden';
@@ -1538,12 +1775,10 @@
             mode = 'active';
         }
 
-        // Avoid redundant DOM writes if nothing changed
         const stateKey = `${state.wakth}|${mode}|${Math.floor(progress)}|${rh}|${rm}`;
         if (lastSalahState === stateKey) return;
         lastSalahState = stateKey;
 
-        // Apply classes
         const widget = dom.salahWidget;
         widget.classList.remove('active', 'warning', 'forbidden');
         widget.classList.add(mode);
@@ -1556,7 +1791,6 @@
         nameEl.classList.remove('active', 'warning', 'forbidden');
         nameEl.classList.add(mode);
 
-        // Icon
         let iconClass;
         if (state.forbidden) {
             iconClass = 'fa-exclamation-triangle';
@@ -1567,7 +1801,6 @@
         }
         dom.salahIcon.className = `fas ${iconClass}`;
 
-        // Name text
         if (state.forbidden) {
             const reasonMap = {
                 sunrise: 'Sunrise',
@@ -1575,20 +1808,14 @@
                 sunset: 'Sunset'
             };
             dom.salahNameText.textContent = reasonMap[state.forbiddenReason] || 'Forbidden';
-            // Update name icon
             nameEl.querySelector('i').className = 'fas fa-ban';
         } else {
             dom.salahNameText.textContent = meta.name;
             nameEl.querySelector('i').className = `fas ${meta.icon}`;
         }
 
-        // Countdown
         dom.salahCountdown.textContent = countdownText;
-
-        // Progress bar
         dom.salahProgressFill.style.width = progress + '%';
-
-        // Time range
         dom.salahStartTime.textContent = format12Hour(state.startRaw);
         dom.salahEndTime.textContent = format12Hour(state.endRaw % 24);
     }
@@ -1628,6 +1855,9 @@
             if (activeCalendar && !activeCalendar.contains(e.target) && e.target !== dom.calendarBtn && !dom.calendarBtn.contains(e.target)) {
                 activeCalendar.remove();
                 activeCalendar = null;
+            }
+            if (activeSalahPopup && !activeSalahPopup.contains(e.target) && e.target !== dom.salahWidget && !dom.salahWidget.contains(e.target)) {
+                closeSalahPopup();
             }
         });
 
@@ -1679,6 +1909,11 @@
         dom.refreshCsvBtn.addEventListener("click", refreshAll);
         dom.engineSearchBtn.addEventListener("click", performSearch);
         dom.engineSelectorBtn.addEventListener("click", toggleDropdown);
+
+        dom.salahWidget.addEventListener("click", (e) => {
+            e.stopPropagation();
+            showSalahPopup(dom.salahWidget);
+        });
 
         const input = dom.engineQueryInput;
         let inputDebounce;
@@ -1732,11 +1967,9 @@
         dom.workStatusIcon = document.getElementById("workStatusIcon");
         dom.workTimer = document.getElementById("workTimer");
         dom.workProgressFill = document.getElementById("workProgressFill");
-        dom.workDayLabel = document.getElementById("workDayLabel");
         dom.workDayTile = document.getElementById("workDayTile");
         dom.workTilePct = document.getElementById("workTilePct");
         dom.workTileLabel = document.getElementById("workTileLabel");
-        // Salah widget
         dom.salahWidget = document.getElementById("salahWidget");
         dom.salahIconTile = document.getElementById("salahIconTile");
         dom.salahIcon = document.getElementById("salahIcon");
