@@ -54,13 +54,8 @@
             font-weight: 700;
             letter-spacing: 1px;
         }
-        .page-title .name-part {
-            color: #fef08a; /* light yellow */
-        }
-        .page-title .space-part {
-            color: #a5f3fc; /* light cyan */
-            margin-left: 0.35rem;
-        }
+        .page-title .name-part { color: #fef08a; }
+        .page-title .space-part { color: #a5f3fc; margin-left: 0.35rem; }
         .header-right {
             display: flex;
             align-items: center;
@@ -83,12 +78,8 @@
             border-color: rgba(16, 185, 129, 0.4);
             box-shadow: 0 0 12px rgba(16, 185, 129, 0.15);
         }
-        .work-widget.off {
-            border-color: rgba(107, 114, 128, 0.25);
-        }
-        .work-widget.holiday {
-            border-color: rgba(16, 185, 129, 0.25);
-        }
+        .work-widget.off { border-color: rgba(107, 114, 128, 0.25); }
+        .work-widget.holiday { border-color: rgba(16, 185, 129, 0.25); }
         .work-day-tile {
             width: 42px;
             height: 42px;
@@ -104,10 +95,7 @@
             box-shadow: 0 2px 8px rgba(0,0,0,0.4);
             transition: background 0.4s ease;
         }
-        .work-day-tile .tile-pct {
-            font-size: 0.72rem;
-            letter-spacing: -0.2px;
-        }
+        .work-day-tile .tile-pct { font-size: 0.72rem; letter-spacing: -0.2px; }
         .work-day-tile .tile-label {
             font-size: 0.42rem;
             font-weight: 600;
@@ -116,12 +104,7 @@
             margin-top: 0.08rem;
             text-transform: uppercase;
         }
-        .work-info {
-            display: flex;
-            flex-direction: column;
-            gap: 0.2rem;
-            min-width: 100px;
-        }
+        .work-info { display: flex; flex-direction: column; gap: 0.2rem; min-width: 100px; }
         .work-top-row {
             display: flex;
             align-items: center;
@@ -139,9 +122,7 @@
             text-transform: uppercase;
             color: #34d399;
         }
-        .work-status i {
-            font-size: 0.5rem;
-        }
+        .work-status i { font-size: 0.5rem; }
         .work-widget.off .work-status { color: #9ca3af; }
         .work-widget.holiday .work-status { color: #34d399; }
         .work-timer {
@@ -179,107 +160,153 @@
             color: #6b7280;
             line-height: 1.1;
         }
-        .work-hours-label {
-            display: flex;
-            align-items: center;
-            gap: 0.22rem;
-        }
-        .work-hours-label i {
-            font-size: 0.48rem;
-            color: #4b5563;
-        }
-        .work-day-label {
-            font-weight: 600;
-            color: #9ca3af;
-        }
+        .work-hours-label { display: flex; align-items: center; gap: 0.22rem; }
+        .work-hours-label i { font-size: 0.48rem; color: #4b5563; }
+        .work-day-label { font-weight: 600; color: #9ca3af; }
 
-        /* === SALAH TIMER === */
-        .salah-timer {
+        /* === SALAH WIDGET (new compact design) === */
+        .salah-widget {
             display: flex;
             align-items: center;
-            gap: 0.25rem;
+            gap: 0.6rem;
             background: #0a0a0a;
             border: 1px solid #1e1e1e;
-            border-radius: 2.5rem;
-            padding: 0.2rem 0.4rem;
-            white-space: nowrap;
+            border-radius: 0.9rem;
+            padding: 0.35rem 0.7rem;
+            transition: border-color 0.4s ease, box-shadow 0.4s ease;
+            min-width: 210px;
         }
-        .salah-timer .wakth-badge {
+        .salah-widget.active {
+            border-color: rgba(16, 185, 129, 0.35);
+            box-shadow: 0 0 12px rgba(16, 185, 129, 0.12);
+        }
+        .salah-widget.warning {
+            border-color: rgba(250, 204, 21, 0.4);
+            box-shadow: 0 0 12px rgba(250, 204, 21, 0.15);
+        }
+        .salah-widget.forbidden {
+            border-color: rgba(239, 68, 68, 0.5);
+            box-shadow: 0 0 15px rgba(239, 68, 68, 0.25);
+            animation: forbiddenPulse 2s ease-in-out infinite;
+        }
+        @keyframes forbiddenPulse {
+            0%, 100% { box-shadow: 0 0 12px rgba(239, 68, 68, 0.2); border-color: rgba(239, 68, 68, 0.4); }
+            50% { box-shadow: 0 0 20px rgba(239, 68, 68, 0.55); border-color: rgba(239, 68, 68, 0.85); }
+        }
+        .salah-icon-tile {
+            width: 38px;
+            height: 38px;
+            border-radius: 0.55rem;
             display: flex;
-            flex-direction: column;
             align-items: center;
             justify-content: center;
-            gap: 0.05rem;
-            padding: 0.15rem 0.45rem;
-            border-radius: 1.5rem;
-            background: #141414;
-            transition: background 0.2s, color 0.2s, box-shadow 0.2s;
-            min-width: 58px;
-            line-height: 1.1;
-        }
-        .salah-timer .wakth-badge.active {
-            background: #1e3a8a;
+            flex-shrink: 0;
             color: #ffffff;
-            box-shadow: 0 0 10px rgba(59, 130, 246, 0.45);
+            font-size: 1rem;
+            transition: background 0.4s ease;
         }
-        .salah-timer .wakth-badge.forbidden {
-            background: #2a0a0a;
-            color: #ef4444;
-            box-shadow: 0 0 8px rgba(239, 68, 68, 0.25);
+        .salah-icon-tile.active {
+            background: linear-gradient(135deg, #059669, #10b981);
+            box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
         }
-        .salah-timer .wakth-badge.forbidden .time,
-        .salah-timer .wakth-badge.forbidden .label,
-        .salah-timer .wakth-badge.forbidden i {
-            color: #ef4444;
+        .salah-icon-tile.warning {
+            background: linear-gradient(135deg, #ca8a04, #facc15);
+            color: #1a1a1a;
+            box-shadow: 0 2px 8px rgba(250, 204, 21, 0.35);
         }
-        .salah-timer .wakth-badge .time {
-            font-family: monospace;
-            font-size: 0.68rem;
-            font-weight: 600;
-            color: #d1d5db;
+        .salah-icon-tile.forbidden {
+            background: linear-gradient(135deg, #b91c1c, #ef4444);
+            box-shadow: 0 2px 10px rgba(239, 68, 68, 0.5);
+            animation: iconBlink 1s ease-in-out infinite;
         }
-        .salah-timer .wakth-badge.active .time {
-            color: #bfdbfe;
+        @keyframes iconBlink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.65; }
         }
-        .salah-timer .wakth-badge .label {
-            font-size: 0.5rem;
-            font-weight: 500;
-            color: #9ca3af;
+        .salah-info {
+            display: flex;
+            flex-direction: column;
+            gap: 0.22rem;
+            flex: 1;
+            min-width: 0;
+        }
+        .salah-top-row {
             display: flex;
             align-items: center;
-            gap: 0.15rem;
-            letter-spacing: 0.3px;
+            justify-content: space-between;
+            gap: 0.4rem;
+            line-height: 1.1;
+        }
+        .salah-name {
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+            font-size: 0.66rem;
+            font-weight: 700;
+            letter-spacing: 0.4px;
             text-transform: uppercase;
         }
-        .salah-timer .wakth-badge .label i {
-            font-size: 0.5rem;
+        .salah-name.active { color: #34d399; }
+        .salah-name.warning { color: #facc15; }
+        .salah-name.forbidden { color: #ef4444; }
+        .salah-name i { font-size: 0.55rem; }
+        .salah-countdown {
+            font-family: monospace;
+            font-size: 0.66rem;
+            font-weight: 700;
+            color: #ffffff;
         }
-        .salah-timer .wakth-badge.active .label {
-            color: #bfdbfe;
+        .salah-widget.warning .salah-countdown { color: #fde047; }
+        .salah-widget.forbidden .salah-countdown { color: #fca5a5; }
+        .salah-progress {
+            height: 4px;
+            background: #1a1a1a;
+            border-radius: 3px;
+            overflow: hidden;
+            position: relative;
         }
-        .salah-timer .separator {
-            color: #2a2a2a;
-            font-size: 0.6rem;
-            user-select: none;
+        .salah-progress-fill {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, #059669, #10b981, #34d399);
+            border-radius: 3px;
+            transition: width 0.8s ease, background 0.5s ease;
         }
-        .location-label {
+        .salah-widget.warning .salah-progress-fill {
+            background: linear-gradient(90deg, #ca8a04, #facc15, #fde047);
+        }
+        .salah-widget.forbidden .salah-progress-fill {
+            background: linear-gradient(90deg, #b91c1c, #ef4444, #f87171);
+            animation: progressShimmer 1.2s linear infinite;
+        }
+        @keyframes progressShimmer {
+            0% { opacity: 0.7; }
+            50% { opacity: 1; }
+            100% { opacity: 0.7; }
+        }
+        .salah-bottom-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 0.52rem;
+            color: #6b7280;
+            line-height: 1.1;
+        }
+        .salah-time-range {
             display: flex;
             align-items: center;
             gap: 0.25rem;
-            padding: 0 0.45rem;
-            font-size: 0.58rem;
-            font-weight: 500;
-            color: #6b7280;
-            border-left: 1px solid #1e1e1e;
-            margin-left: 0.1rem;
+            font-family: monospace;
         }
-        .location-label i {
-            color: #3b82f6;
-            font-size: 0.6rem;
+        .salah-time-range i { font-size: 0.45rem; color: #4b5563; }
+        .salah-location {
+            display: flex;
+            align-items: center;
+            gap: 0.2rem;
+            font-weight: 600;
+            color: #9ca3af;
         }
-        .location-label span {
-            letter-spacing: 0.3px;
-        }
+        .salah-location i { color: #3b82f6; font-size: 0.5rem; }
 
         .clock-date { text-align: right; }
         .clock { font-size: 1.2rem; font-weight: 600; font-family: monospace; }
@@ -384,9 +411,7 @@
             background: #111a2e;
             box-shadow: 0 0 8px rgba(59, 130, 246, 0.35);
         }
-        .folder-btn i {
-            font-size: 1.05rem;
-        }
+        .folder-btn i { font-size: 1.05rem; }
         .folder-popup {
             position: fixed;
             background: #0f0f0f;
@@ -415,9 +440,7 @@
             align-items: center;
             gap: 0.35rem;
         }
-        .folder-popup-header i {
-            color: #3b82f6;
-        }
+        .folder-popup-header i { color: #3b82f6; }
         .folder-popup-item {
             display: flex;
             align-items: center;
@@ -430,9 +453,7 @@
             font-weight: 500;
             transition: background 0.12s;
         }
-        .folder-popup-item:hover {
-            background: #1f2937;
-        }
+        .folder-popup-item:hover { background: #1f2937; }
         .folder-popup-item img {
             width: 18px;
             height: 18px;
@@ -476,9 +497,7 @@
             position: relative;
             z-index: 5;
         }
-        .engine-icon-display:hover {
-            background: #1f2937;
-        }
+        .engine-icon-display:hover { background: #1f2937; }
         .engine-icon-display img {
             width: 22px;
             height: 22px;
@@ -542,10 +561,7 @@
         .dropdown-item .shortcut-folder i { font-size: 0.55rem; }
 
         /* === CATEGORIES === */
-        .categories-section {
-            flex: 1;
-            overflow-y: auto;
-        }
+        .categories-section { flex: 1; overflow-y: auto; }
         .category-row { margin-bottom: 1.5rem; content-visibility: auto; contain-intrinsic-size: 0 120px; }
         .category-title {
             font-size: 0.85rem;
@@ -579,11 +595,7 @@
             justify-content: center;
             margin-bottom: 0.3rem;
         }
-        .direct-icon img {
-            width: 100%;
-            height: 100%;
-            object-fit: contain;
-        }
+        .direct-icon img { width: 100%; height: 100%; object-fit: contain; }
         .clean-app-tile span {
             font-size: 0.6rem;
             font-weight: 500;
@@ -616,20 +628,10 @@
             .work-status { font-size: 0.54rem; }
             .work-timer { font-size: 0.58rem; }
             .work-bottom-row { font-size: 0.46rem; }
-        }
-        @media (max-width: 1100px) {
-            .salah-timer .wakth-badge { min-width: 48px; padding: 0.12rem 0.3rem; }
-            .salah-timer .wakth-badge .time { font-size: 0.6rem; }
-            .salah-timer .wakth-badge .label { font-size: 0.42rem; }
-            .salah-timer .wakth-badge .label i { font-size: 0.42rem; }
-            .location-label { font-size: 0.5rem; padding: 0 0.3rem; }
+            .salah-widget { min-width: 190px; padding: 0.3rem 0.6rem; gap: 0.5rem; }
+            .salah-icon-tile { width: 34px; height: 34px; font-size: 0.9rem; }
         }
         @media (max-width: 900px) {
-            .salah-timer .wakth-badge .label span { display: none; }
-            .salah-timer .wakth-badge .label i { font-size: 0.55rem; }
-            .salah-timer .wakth-badge { min-width: 42px; padding: 0.1rem 0.25rem; }
-            .location-label span { display: none; }
-            .location-label { padding: 0 0.25rem; }
             .folder-btn { width: 34px; height: 34px; }
             .folder-btn i { font-size: 0.95rem; }
             .work-widget { padding: 0.25rem 0.45rem; gap: 0.4rem; }
@@ -638,6 +640,12 @@
             .work-day-tile .tile-label { display: none; }
             .work-info { min-width: 78px; }
             .work-bottom-row { display: none; }
+            .salah-widget { min-width: 165px; padding: 0.25rem 0.5rem; gap: 0.45rem; }
+            .salah-icon-tile { width: 30px; height: 30px; font-size: 0.82rem; }
+            .salah-name { font-size: 0.6rem; }
+            .salah-countdown { font-size: 0.6rem; }
+            .salah-time-range { font-size: 0.46rem; }
+            .salah-location { display: none; }
         }
         @media (max-width: 768px) {
             .app { padding: 0.8rem 1rem; gap: 0.8rem; }
@@ -654,18 +662,17 @@
             .direct-icon { width: 32px; height: 32px; }
             .clean-app-tile span { font-size: 0.5rem; }
             .equal-grid { gap: 0.5rem; grid-template-columns: repeat(auto-fit, minmax(55px, 1fr)); }
-            .salah-timer { padding: 0.15rem 0.25rem; gap: 0.15rem; }
-            .salah-timer .wakth-badge { min-width: 36px; padding: 0.08rem 0.2rem; }
-            .salah-timer .wakth-badge .time { font-size: 0.5rem; }
-            .salah-timer .wakth-badge .label i { font-size: 0.45rem; }
-            .salah-timer .separator { display: none; }
-            .location-label { display: none; }
             .work-widget { padding: 0.2rem 0.4rem; gap: 0.35rem; }
             .work-day-tile { width: 30px; height: 30px; }
             .work-day-tile .tile-pct { font-size: 0.54rem; }
             .work-info { min-width: 70px; }
             .work-status { font-size: 0.5rem; }
             .work-timer { font-size: 0.52rem; }
+            .salah-widget { min-width: 145px; padding: 0.2rem 0.4rem; gap: 0.35rem; }
+            .salah-icon-tile { width: 26px; height: 26px; font-size: 0.72rem; }
+            .salah-name { font-size: 0.54rem; }
+            .salah-countdown { font-size: 0.54rem; }
+            .salah-time-range { font-size: 0.42rem; }
         }
         @media (max-width: 480px) {
             .app { padding: 0.5rem 0.6rem; gap: 0.5rem; }
@@ -677,7 +684,7 @@
             .equal-grid { grid-template-columns: repeat(auto-fit, minmax(45px, 1fr)); gap: 0.3rem; }
             .direct-icon { width: 28px; height: 28px; }
             .clean-app-tile span { font-size: 0.45rem; }
-            .salah-timer { display: none; }
+            .salah-widget { display: none; }
             .work-widget { display: none; }
         }
     </style>
@@ -716,34 +723,31 @@
                     </div>
                 </div>
             </div>
-            <!-- === SALAH TIMER === -->
-            <div class="salah-timer" id="salahTimer" title="Daily prayer times (Salafi method) — Patuakhali, Bangladesh">
-                <div class="wakth-badge" data-wakth="fajr">
-                    <span class="time" id="timeFajr">--:--</span>
-                    <span class="label"><i class="fas fa-moon"></i><span>Fajr</span></span>
+            <!-- === SALAH WIDGET (compact, current wakth only) === -->
+            <div class="salah-widget active" id="salahWidget" title="Current prayer time — Patuakhali, Bangladesh">
+                <div class="salah-icon-tile active" id="salahIconTile">
+                    <i class="fas fa-moon" id="salahIcon"></i>
                 </div>
-                <span class="separator">·</span>
-                <div class="wakth-badge" data-wakth="dhuhr">
-                    <span class="time" id="timeDhuhr">--:--</span>
-                    <span class="label"><i class="fas fa-sun"></i><span>Dhuhr</span></span>
-                </div>
-                <span class="separator">·</span>
-                <div class="wakth-badge" data-wakth="asr">
-                    <span class="time" id="timeAsr">--:--</span>
-                    <span class="label"><i class="fas fa-cloud-sun"></i><span>Asr</span></span>
-                </div>
-                <span class="separator">·</span>
-                <div class="wakth-badge" data-wakth="maghrib">
-                    <span class="time" id="timeMaghrib">--:--</span>
-                    <span class="label"><i class="fas fa-sunset"></i><span>Maghrib</span></span>
-                </div>
-                <span class="separator">·</span>
-                <div class="wakth-badge" data-wakth="isha">
-                    <span class="time" id="timeIsha">--:--</span>
-                    <span class="label"><i class="fas fa-star"></i><span>Isha</span></span>
-                </div>
-                <div class="location-label" id="locationLabel">
-                    <i class="fas fa-map-marker-alt"></i><span>Patuakhali</span>
+                <div class="salah-info">
+                    <div class="salah-top-row">
+                        <div class="salah-name active" id="salahName">
+                            <i class="fas fa-moon"></i><span id="salahNameText">Fajr</span>
+                        </div>
+                        <div class="salah-countdown" id="salahCountdown">--:-- left</div>
+                    </div>
+                    <div class="salah-progress">
+                        <div class="salah-progress-fill" id="salahProgressFill"></div>
+                    </div>
+                    <div class="salah-bottom-row">
+                        <div class="salah-time-range" id="salahTimeRange">
+                            <i class="fas fa-play"></i><span id="salahStartTime">--:--</span>
+                            <i class="fas fa-arrow-right" style="font-size:0.4rem;color:#4b5563;"></i>
+                            <i class="fas fa-stop"></i><span id="salahEndTime">--:--</span>
+                        </div>
+                        <div class="salah-location" id="salahLocation">
+                            <i class="fas fa-map-marker-alt"></i><span>Patuakhali</span>
+                        </div>
+                    </div>
                 </div>
             </div>
             <button class="icon-btn" id="editSheetBtn" title="Edit Google Sheet"><i class="fas fa-pen"></i></button>
@@ -792,12 +796,11 @@
     const LOCATION_NAME = "Patuakhali";
 
     // === WORK HOURS ===
-    const WORK_DAYS = [1, 2, 3, 4]; // Mon–Thu
+    const WORK_DAYS = [1, 2, 3, 4];
     const WORK_START_HOUR = 9;
     const WORK_END_HOUR = 16;
     const DAY_NAMES_SHORT = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
 
-    // Green palette for the day-progress tile (deterministic random per day)
     const GREEN_TILE_COLORS = [
         '#059669', '#10b981', '#0d9488', '#14b8a6',
         '#16a34a', '#22c55e', '#0f766e', '#047857',
@@ -818,6 +821,15 @@
         '#a855f7','#eab308','#0ea5e9','#f43f5e','#22c55e'
     ];
 
+    // Wakth visual metadata
+    const WAKTH_META = {
+        fajr:    { name: 'Fajr',    icon: 'fa-moon' },
+        dhuhr:   { name: 'Dhuhr',   icon: 'fa-sun' },
+        asr:     { name: 'Asr',     icon: 'fa-cloud-sun' },
+        maghrib: { name: 'Maghrib', icon: 'fa-sunset' },
+        isha:    { name: 'Isha',    icon: 'fa-star' }
+    };
+
     // ==================== STATE ====================
     let csvCategoryBookmarks = [];
     let searchEngines = [];
@@ -831,12 +843,9 @@
     let activeCalendar = null;
     let cachedPrayerDay = null;
     let cachedTimes = null;
-    let lastActiveWakth = null;
-    let lastForbidden = null;
+    let lastSalahState = null; // { wakth, mode } — to avoid redundant DOM writes
 
     const dom = {};
-    const wakthBadges = {};
-    let allWakthBadges = [];
 
     // ==================== UTILITIES ====================
     function escapeHtml(str) {
@@ -857,7 +866,6 @@
         return FOLDER_COLORS[Math.abs(hash) % FOLDER_COLORS.length];
     }
 
-    // 12-hour format helper
     function format12Hour(hours24) {
         let h = Math.floor(hours24);
         let m = Math.floor((hours24 - h) * 60);
@@ -1273,7 +1281,7 @@
         activeCalendar = popup;
     }
 
-    // ==================== CLOCK (12-hour always) ====================
+    // ==================== CLOCK ====================
     function updateClock() {
         const now = new Date();
         let hours = now.getHours() % 12 || 12;
@@ -1308,7 +1316,6 @@
 
         widget.classList.remove('working', 'off', 'holiday');
 
-        // Set day tile color deterministically per date
         const dateKey = now.toDateString();
         tile.style.background = getDayTileColor(dateKey);
 
@@ -1318,11 +1325,9 @@
         let inWork = false;
         let displayTime = '--:--';
 
-        if (isWorkDay) {
-            if (currentHours >= startH && currentHours < endH) {
-                inWork = true;
-                progress = ((currentHours - startH) / totalH) * 100;
-            }
+        if (isWorkDay && currentHours >= startH && currentHours < endH) {
+            inWork = true;
+            progress = ((currentHours - startH) / totalH) * 100;
         }
 
         if (isWorkDay) {
@@ -1330,7 +1335,6 @@
                 const remainingH = endH - currentHours;
                 const rh = Math.floor(remainingH);
                 const rm = Math.floor((remainingH - rh) * 60);
-                // 12-hour format for remaining time (e.g., 3h 25m until 4:00 PM)
                 displayTime = `${rh}h ${String(rm).padStart(2,'0')}m left`;
                 statusText.textContent = 'Working';
                 statusIcon.className = 'fas fa-circle';
@@ -1361,7 +1365,6 @@
         timerEl.textContent = displayTime;
         fillEl.style.width = progress + '%';
 
-        // Update day-progress tile with percentage + label
         if (isWorkDay) {
             const pct = Math.round(progress);
             tilePct.textContent = pct + '%';
@@ -1369,7 +1372,6 @@
             else if (currentHours < startH) tileLabel.textContent = 'SOON';
             else tileLabel.textContent = 'DONE';
         } else {
-            // Holiday: show day name + RELAX label
             tilePct.textContent = DAY_NAMES_SHORT[day];
             tileLabel.textContent = 'OFF';
         }
@@ -1444,7 +1446,64 @@
         };
     }
 
-    function updateSalahTimer() {
+    // Determine current wakth, its window, and forbidden intervals.
+    // Returns: { wakth, startRaw, endRaw, forbidden: bool, forbiddenReason: 'sunrise'|'zenith'|'sunset'|null }
+    function getCurrentSalahState(now, times) {
+        const raw = times.raw;
+        const h = now.getHours() + now.getMinutes()/60 + now.getSeconds()/3600;
+
+        // Wakth windows (in local decimal hours)
+        // Fajr: fajr → dhuhr
+        // Dhuhr: dhuhr → asr
+        // Asr: asr → maghrib
+        // Maghrib: maghrib → isha
+        // Isha: isha → fajr (next day) — we treat end as 24 + fajr for progress
+        let wakth, startRaw, endRaw;
+        if (h >= raw.fajr && h < raw.dhuhr) {
+            wakth = 'fajr'; startRaw = raw.fajr; endRaw = raw.dhuhr;
+        } else if (h >= raw.dhuhr && h < raw.asr) {
+            wakth = 'dhuhr'; startRaw = raw.dhuhr; endRaw = raw.asr;
+        } else if (h >= raw.asr && h < raw.maghrib) {
+            wakth = 'asr'; startRaw = raw.asr; endRaw = raw.maghrib;
+        } else if (h >= raw.maghrib && h < raw.isha) {
+            wakth = 'maghrib'; startRaw = raw.maghrib; endRaw = raw.isha;
+        } else {
+            // Isha window: from isha until next day's fajr
+            wakth = 'isha'; startRaw = raw.isha; endRaw = raw.fajr + 24;
+            // If we're past midnight, shift our current hour into the next day's frame
+            if (h < raw.fajr) {
+                // currently after midnight but before fajr — same isha window
+                // startRaw stays as yesterday's isha; we need current h + 24 to compute progress
+                return {
+                    wakth: 'isha',
+                    startRaw: raw.isha,
+                    endRaw: raw.fajr + 24,
+                    current: h + 24,
+                    forbidden: false,
+                    forbiddenReason: null
+                };
+            }
+        }
+
+        // Forbidden windows (relative to wakth times)
+        let forbidden = false, forbiddenReason = null;
+        // Sunrise: sunrise → sunrise + 20 min
+        if (h >= raw.sunrise && h < (raw.sunrise + 20/60)) {
+            forbidden = true; forbiddenReason = 'sunrise';
+        }
+        // Zenith: dhuhr - 10 min → dhuhr
+        else if (h >= (raw.dhuhr - 10/60) && h < raw.dhuhr) {
+            forbidden = true; forbiddenReason = 'zenith';
+        }
+        // Sunset: maghrib - 10 min → maghrib
+        else if (h >= (raw.maghrib - 10/60) && h < raw.maghrib) {
+            forbidden = true; forbiddenReason = 'sunset';
+        }
+
+        return { wakth, startRaw, endRaw, current: h, forbidden, forbiddenReason };
+    }
+
+    function updateSalahWidget() {
         const now = new Date();
         const dayKey = now.toDateString();
 
@@ -1454,47 +1513,84 @@
                 PRAYER_LAT, PRAYER_LNG, PRAYER_TIMEZONE
             );
             cachedPrayerDay = dayKey;
-
-            dom.timeFajr.textContent = cachedTimes.fajr;
-            dom.timeDhuhr.textContent = cachedTimes.dhuhr;
-            dom.timeAsr.textContent = cachedTimes.asr;
-            dom.timeMaghrib.textContent = cachedTimes.maghrib;
-            dom.timeIsha.textContent = cachedTimes.isha;
         }
 
-        const raw = cachedTimes.raw;
-        const currentHours = now.getHours() + now.getMinutes()/60 + now.getSeconds()/3600;
+        const state = getCurrentSalahState(now, cachedTimes);
+        const meta = WAKTH_META[state.wakth];
 
-        let activeWakth = null;
-        if (currentHours >= raw.fajr && currentHours < raw.dhuhr) activeWakth = 'fajr';
-        else if (currentHours >= raw.dhuhr && currentHours < raw.asr) activeWakth = 'dhuhr';
-        else if (currentHours >= raw.asr && currentHours < raw.maghrib) activeWakth = 'asr';
-        else if (currentHours >= raw.maghrib && currentHours < raw.isha) activeWakth = 'maghrib';
-        else if (currentHours >= raw.isha || currentHours < raw.fajr) activeWakth = 'isha';
+        // Compute progress within the wakth window
+        let progress = ((state.current - state.startRaw) / (state.endRaw - state.startRaw)) * 100;
+        progress = Math.max(0, Math.min(100, progress));
 
-        const sunriseH = raw.sunrise;
-        const dhuhrH = raw.dhuhr;
-        const maghribH = raw.maghrib;
+        // Time remaining until end of wakth
+        const remainingH = state.endRaw - state.current;
+        const rh = Math.floor(remainingH);
+        const rm = Math.floor((remainingH - rh) * 60);
+        const countdownText = `${rh}h ${String(rm).padStart(2,'0')}m left`;
 
-        let forbiddenWakth = null;
-        if (currentHours >= sunriseH && currentHours < (sunriseH + 20/60)) {
-            forbiddenWakth = 'fajr';
-        } else if (currentHours >= (dhuhrH - 10/60) && currentHours < dhuhrH) {
-            forbiddenWakth = 'dhuhr';
-        } else if (currentHours >= (maghribH - 10/60) && currentHours < maghribH) {
-            forbiddenWakth = 'maghrib';
+        // Determine mode
+        let mode;
+        if (state.forbidden) {
+            mode = 'forbidden';
+        } else if (remainingH <= 15/60) {
+            mode = 'warning';
+        } else {
+            mode = 'active';
         }
 
-        if (activeWakth !== lastActiveWakth || forbiddenWakth !== lastForbidden) {
-            for (const b of allWakthBadges) {
-                b.classList.remove('active');
-                b.classList.remove('forbidden');
-            }
-            if (activeWakth && wakthBadges[activeWakth]) wakthBadges[activeWakth].classList.add('active');
-            if (forbiddenWakth && wakthBadges[forbiddenWakth]) wakthBadges[forbiddenWakth].classList.add('forbidden');
-            lastActiveWakth = activeWakth;
-            lastForbidden = forbiddenWakth;
+        // Avoid redundant DOM writes if nothing changed
+        const stateKey = `${state.wakth}|${mode}|${Math.floor(progress)}|${rh}|${rm}`;
+        if (lastSalahState === stateKey) return;
+        lastSalahState = stateKey;
+
+        // Apply classes
+        const widget = dom.salahWidget;
+        widget.classList.remove('active', 'warning', 'forbidden');
+        widget.classList.add(mode);
+
+        const iconTile = dom.salahIconTile;
+        iconTile.classList.remove('active', 'warning', 'forbidden');
+        iconTile.classList.add(mode);
+
+        const nameEl = dom.salahName;
+        nameEl.classList.remove('active', 'warning', 'forbidden');
+        nameEl.classList.add(mode);
+
+        // Icon
+        let iconClass;
+        if (state.forbidden) {
+            iconClass = 'fa-exclamation-triangle';
+        } else if (mode === 'warning') {
+            iconClass = 'fa-hourglass-end';
+        } else {
+            iconClass = meta.icon;
         }
+        dom.salahIcon.className = `fas ${iconClass}`;
+
+        // Name text
+        if (state.forbidden) {
+            const reasonMap = {
+                sunrise: 'Sunrise',
+                zenith: 'Zenith',
+                sunset: 'Sunset'
+            };
+            dom.salahNameText.textContent = reasonMap[state.forbiddenReason] || 'Forbidden';
+            // Update name icon
+            nameEl.querySelector('i').className = 'fas fa-ban';
+        } else {
+            dom.salahNameText.textContent = meta.name;
+            nameEl.querySelector('i').className = `fas ${meta.icon}`;
+        }
+
+        // Countdown
+        dom.salahCountdown.textContent = countdownText;
+
+        // Progress bar
+        dom.salahProgressFill.style.width = progress + '%';
+
+        // Time range
+        dom.salahStartTime.textContent = format12Hour(state.startRaw);
+        dom.salahEndTime.textContent = format12Hour(state.endRaw % 24);
     }
 
     // ==================== REFRESH ALL ====================
@@ -1631,11 +1727,6 @@
         dom.clockDisplay = document.getElementById("clockDisplay");
         dom.dateDisplay = document.getElementById("dateDisplay");
         dom.cacheIndicator = document.getElementById("cacheIndicator");
-        dom.timeFajr = document.getElementById("timeFajr");
-        dom.timeDhuhr = document.getElementById("timeDhuhr");
-        dom.timeAsr = document.getElementById("timeAsr");
-        dom.timeMaghrib = document.getElementById("timeMaghrib");
-        dom.timeIsha = document.getElementById("timeIsha");
         dom.workWidget = document.getElementById("workWidget");
         dom.workStatusText = document.getElementById("workStatusText");
         dom.workStatusIcon = document.getElementById("workStatusIcon");
@@ -1645,21 +1736,24 @@
         dom.workDayTile = document.getElementById("workDayTile");
         dom.workTilePct = document.getElementById("workTilePct");
         dom.workTileLabel = document.getElementById("workTileLabel");
-
-        wakthBadges.fajr    = document.querySelector('[data-wakth="fajr"]');
-        wakthBadges.dhuhr   = document.querySelector('[data-wakth="dhuhr"]');
-        wakthBadges.asr     = document.querySelector('[data-wakth="asr"]');
-        wakthBadges.maghrib = document.querySelector('[data-wakth="maghrib"]');
-        wakthBadges.isha    = document.querySelector('[data-wakth="isha"]');
-        allWakthBadges = Object.values(wakthBadges);
+        // Salah widget
+        dom.salahWidget = document.getElementById("salahWidget");
+        dom.salahIconTile = document.getElementById("salahIconTile");
+        dom.salahIcon = document.getElementById("salahIcon");
+        dom.salahName = document.getElementById("salahName");
+        dom.salahNameText = document.getElementById("salahNameText");
+        dom.salahCountdown = document.getElementById("salahCountdown");
+        dom.salahProgressFill = document.getElementById("salahProgressFill");
+        dom.salahStartTime = document.getElementById("salahStartTime");
+        dom.salahEndTime = document.getElementById("salahEndTime");
 
         setupEventListeners();
 
         setInterval(updateClock, 1000);
-        setInterval(updateSalahTimer, 60000);
+        setInterval(updateSalahWidget, 30000);
         setInterval(updateWorkWidget, 30000);
         updateClock();
-        updateSalahTimer();
+        updateSalahWidget();
         updateWorkWidget();
 
         try {
