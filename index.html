@@ -177,9 +177,7 @@
             cursor: pointer;
             user-select: none;
         }
-        .salah-widget:hover {
-            background: #0f0f0f;
-        }
+        .salah-widget:hover { background: #0f0f0f; }
         .salah-widget.active {
             border-color: rgba(16, 185, 129, 0.35);
             box-shadow: 0 0 12px rgba(16, 185, 129, 0.12);
@@ -946,14 +944,13 @@
         '#a855f7','#eab308','#0ea5e9','#f43f5e','#22c55e'
     ];
 
-    // Icons: use only Font Awesome 6 Free solid icons that are guaranteed available.
-    // Maghrib: use fa-cloud-moon (sunset scene), since fa-sunset is a Pro icon.
+    // Font Awesome 6 Free solid icons (Maghrib uses fa-cloud-moon since fa-sunset is Pro only)
     const WAKTH_META = {
-        fajr:    { name: 'Fajr',    icon: 'fa-moon',       sub: 'Dawn' },
-        dhuhr:   { name: 'Dhuhr',   icon: 'fa-sun',        sub: 'Noon' },
-        asr:     { name: 'Asr',     icon: 'fa-cloud-sun',  sub: 'Afternoon' },
-        maghrib: { name: 'Maghrib', icon: 'fa-cloud-moon', sub: 'Sunset' },
-        isha:    { name: 'Isha',    icon: 'fa-star',       sub: 'Night' }
+        fajr:    { name: 'Fajr',    icon: 'fa-moon' },
+        dhuhr:   { name: 'Dhuhr',   icon: 'fa-sun' },
+        asr:     { name: 'Asr',     icon: 'fa-cloud-sun' },
+        maghrib: { name: 'Maghrib', icon: 'fa-cloud-moon' },
+        isha:    { name: 'Isha',    icon: 'fa-star' }
     };
 
     // ==================== STATE ====================
@@ -1416,10 +1413,30 @@
         }
     }
 
-    // Helper: given an end hour (which may exceed 24 for Isha), format it.
-    // For display we show the actual clock time of the boundary.
     function fmtBoundary(h) {
         return format12Hour(((h % 24) + 24) % 24);
+    }
+
+    // Compute wakth boundaries based on Salafi rules:
+    //   Fajr    → ends at Sunrise (Shuruq)
+    //   Dhuhr   → ends at Zenith start (Istiwa' = Dhuhr - 10 min)
+    //   Asr     → ends at Sunset start (Ghurub = Maghrib - 10 min)
+    //   Maghrib → ends at Isha
+    //   Isha    → ends at next day's Fajr
+    // The forbidden intervals are:
+    //   Sunrise window: sunrise → sunrise + 20 min
+    //   Zenith window:  dhuhr - 10 min → dhuhr
+    //   Sunset window:  maghrib - 10 min → maghrib
+    function getWakthBoundaries(raw) {
+        const zenithStart = raw.dhuhr - 10/60;
+        const sunsetStart = raw.maghrib - 10/60;
+        return {
+            fajr:    { start: raw.fajr,       end: raw.sunrise },
+            dhuhr:   { start: raw.dhuhr,      end: zenithStart },
+            asr:     { start: raw.asr,        end: sunsetStart },
+            maghrib: { start: raw.maghrib,    end: raw.isha },
+            isha:    { start: raw.isha,       end: raw.fajr + 24 }
+        };
     }
 
     function showSalahPopup(anchorBtn) {
@@ -1440,15 +1457,7 @@
 
         const state = getCurrentSalahState(now, cachedTimes);
         const raw = cachedTimes.raw;
-
-        // Build boundary map for each wakth: startRaw → endRaw (in local decimal hours)
-        const boundaries = {
-            fajr:    { start: raw.fajr,    end: raw.dhuhr },
-            dhuhr:   { start: raw.dhuhr,   end: raw.asr },
-            asr:     { start: raw.asr,     end: raw.maghrib },
-            maghrib: { start: raw.maghrib, end: raw.isha },
-            isha:    { start: raw.isha,    end: raw.fajr + 24 } // Isha ends at next day's Fajr
-        };
+        const boundaries = getWakthBoundaries(raw);
 
         const popup = document.createElement("div");
         popup.className = "salah-popup";
@@ -1463,7 +1472,7 @@
         </div>`);
         chunks.push(`<div class="salah-popup-list">`);
 
-        // --- Five wakth rows: name + start → end range ---
+        // Five wakth rows: name + correct start → end range
         for (const w of order) {
             const meta = WAKTH_META[w];
             const isCurrent = (state.wakth === w && !state.forbidden);
@@ -1484,24 +1493,20 @@
             </div>`);
         }
 
-        // --- Divider ---
         chunks.push(`<div class="salah-popup-divider"></div>`);
 
-        // --- Forbidden intervals: for each we show the actual short window ---
-        // Sunrise: sunrise → sunrise + 20 min
+        // Forbidden intervals with their full short-window ranges
         const sunriseStart = raw.sunrise;
         const sunriseEnd = raw.sunrise + 20/60;
-        // Zenith: dhuhr - 10 min → dhuhr
         const zenithStart = raw.dhuhr - 10/60;
         const zenithEnd = raw.dhuhr;
-        // Sunset: maghrib - 10 min → maghrib
         const sunsetStart = raw.maghrib - 10/60;
         const sunsetEnd = raw.maghrib;
 
         const forbiddenRows = [
-            { name: 'Sunrise (Forbidden)', sub: 'Shuruq — pause prayer', start: sunriseStart, end: sunriseEnd, icon: 'fa-exclamation-triangle' },
-            { name: 'Zenith (Forbidden)',  sub: 'Istiwa — solar noon',   start: zenithStart,  end: zenithEnd,  icon: 'fa-sun' },
-            { name: 'Sunset (Forbidden)',  sub: 'Ghurub — pause prayer', start: sunsetStart,  end: sunsetEnd,  icon: 'fa-cloud-moon' }
+            { name: 'Sunrise (Forbidden)', start: sunriseStart, end: sunriseEnd, icon: 'fa-exclamation-triangle' },
+            { name: 'Zenith (Forbidden)',  start: zenithStart,  end: zenithEnd,  icon: 'fa-sun' },
+            { name: 'Sunset (Forbidden)',  start: sunsetStart,  end: sunsetEnd,  icon: 'fa-cloud-moon' }
         ];
 
         for (const f of forbiddenRows) {
@@ -1520,7 +1525,6 @@
 
         chunks.push(`</div>`);
 
-        // --- Footer: method info ---
         chunks.push(`<div class="salah-popup-footer">
             <span class="method-label"><i class="fas fa-calculator"></i>Salafi (Fajr 18°, Isha 17°)</span>
             <span>Asr: Shafi'i</span>
@@ -1702,45 +1706,68 @@
         };
     }
 
+    // Returns the current wakth, its boundaries, and forbidden info.
+    // Wakth windows:
+    //   fajr    : fajr → sunrise
+    //   dhuhr   : dhuhr → zenithStart (dhuhr - 10min)
+    //   asr     : asr → sunsetStart (maghrib - 10min)
+    //   maghrib : maghrib → isha
+    //   isha    : isha → next day fajr
     function getCurrentSalahState(now, times) {
         const raw = times.raw;
         const h = now.getHours() + now.getMinutes()/60 + now.getSeconds()/3600;
 
-        let wakth, startRaw, endRaw;
-        if (h >= raw.fajr && h < raw.dhuhr) {
-            wakth = 'fajr'; startRaw = raw.fajr; endRaw = raw.dhuhr;
+        const sunriseEnd = raw.sunrise + 20/60;
+        const zenithStart = raw.dhuhr - 10/60;
+        const sunsetStart = raw.maghrib - 10/60;
+
+        // Forbidden windows first (they carve out short gaps between wakth windows)
+        let forbidden = false, forbiddenReason = null;
+        let forbiddenWakth = null;
+        if (h >= raw.sunrise && h < sunriseEnd) {
+            forbidden = true; forbiddenReason = 'sunrise'; forbiddenWakth = 'fajr';
+        } else if (h >= zenithStart && h < raw.dhuhr) {
+            forbidden = true; forbiddenReason = 'zenith'; forbiddenWakth = 'dhuhr';
+        } else if (h >= sunsetStart && h < raw.maghrib) {
+            forbidden = true; forbiddenReason = 'sunset'; forbiddenWakth = 'asr';
+        }
+
+        // Wakth windows (using the corrected boundaries)
+        let wakth, startRaw, endRaw, current;
+        if (h >= raw.fajr && h < raw.sunrise) {
+            wakth = 'fajr'; startRaw = raw.fajr; endRaw = raw.sunrise; current = h;
+        } else if (h >= sunriseEnd && h < zenithStart) {
+            // Between sunrise window end and zenith start — still within Fajr's *extended* window? No:
+            // After sunrise, the Fajr wakth has ended (Sunrise ends Fajr time in Salafi fiqh).
+            // The time between sunriseEnd and zenithStart is Duha — no obligatory prayer window.
+            // Mark as Fajr ended; show next as Dhuhr starting soon.
+            wakth = 'fajr'; startRaw = raw.fajr; endRaw = raw.sunrise; current = h;
+        } else if (h >= zenithStart && h < raw.dhuhr) {
+            // Forbidden zenith — during the gap before Dhuhr
+            wakth = 'fajr'; startRaw = raw.fajr; endRaw = raw.sunrise; current = h;
+        } else if (h >= raw.dhuhr && h < zenithStart) {
+            wakth = 'dhuhr'; startRaw = raw.dhuhr; endRaw = zenithStart; current = h;
         } else if (h >= raw.dhuhr && h < raw.asr) {
-            wakth = 'dhuhr'; startRaw = raw.dhuhr; endRaw = raw.asr;
-        } else if (h >= raw.asr && h < raw.maghrib) {
-            wakth = 'asr'; startRaw = raw.asr; endRaw = raw.maghrib;
+            // Dhuhr between dhuhr and asr, but we already carved out the zenith-forbidden
+            wakth = 'dhuhr'; startRaw = raw.dhuhr; endRaw = zenithStart; current = h;
+        } else if (h >= raw.asr && h < sunsetStart) {
+            wakth = 'asr'; startRaw = raw.asr; endRaw = sunsetStart; current = h;
+        } else if (h >= sunsetStart && h < raw.maghrib) {
+            // Forbidden sunset
+            wakth = 'asr'; startRaw = raw.asr; endRaw = sunsetStart; current = h;
         } else if (h >= raw.maghrib && h < raw.isha) {
-            wakth = 'maghrib'; startRaw = raw.maghrib; endRaw = raw.isha;
+            wakth = 'maghrib'; startRaw = raw.maghrib; endRaw = raw.isha; current = h;
         } else {
+            // Isha window (from isha to next day's fajr)
             wakth = 'isha'; startRaw = raw.isha; endRaw = raw.fajr + 24;
             if (h < raw.fajr) {
-                return {
-                    wakth: 'isha',
-                    startRaw: raw.isha,
-                    endRaw: raw.fajr + 24,
-                    current: h + 24,
-                    forbidden: false,
-                    forbiddenReason: null
-                };
+                current = h + 24;
+            } else {
+                current = h;
             }
         }
 
-        let forbidden = false, forbiddenReason = null;
-        if (h >= raw.sunrise && h < (raw.sunrise + 20/60)) {
-            forbidden = true; forbiddenReason = 'sunrise';
-        }
-        else if (h >= (raw.dhuhr - 10/60) && h < raw.dhuhr) {
-            forbidden = true; forbiddenReason = 'zenith';
-        }
-        else if (h >= (raw.maghrib - 10/60) && h < raw.maghrib) {
-            forbidden = true; forbiddenReason = 'sunset';
-        }
-
-        return { wakth, startRaw, endRaw, current: h, forbidden, forbiddenReason };
+        return { wakth, startRaw, endRaw, current, forbidden, forbiddenReason };
     }
 
     function updateSalahWidget() {
