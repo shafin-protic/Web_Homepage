@@ -191,6 +191,10 @@
             box-shadow: 0 0 15px rgba(239, 68, 68, 0.25);
             animation: forbiddenPulse 2s ease-in-out infinite;
         }
+        .salah-widget.gap {
+            border-color: rgba(107, 114, 128, 0.35);
+            box-shadow: 0 0 10px rgba(107, 114, 128, 0.12);
+        }
         @keyframes forbiddenPulse {
             0%, 100% { box-shadow: 0 0 12px rgba(239, 68, 68, 0.2); border-color: rgba(239, 68, 68, 0.4); }
             50% { box-shadow: 0 0 20px rgba(239, 68, 68, 0.55); border-color: rgba(239, 68, 68, 0.85); }
@@ -220,6 +224,10 @@
             background: linear-gradient(135deg, #b91c1c, #ef4444);
             box-shadow: 0 2px 10px rgba(239, 68, 68, 0.5);
             animation: iconBlink 1s ease-in-out infinite;
+        }
+        .salah-icon-tile.gap {
+            background: linear-gradient(135deg, #4b5563, #6b7280);
+            box-shadow: 0 2px 8px rgba(107, 114, 128, 0.3);
         }
         @keyframes iconBlink {
             0%, 100% { opacity: 1; }
@@ -251,6 +259,7 @@
         .salah-name.active { color: #34d399; }
         .salah-name.warning { color: #facc15; }
         .salah-name.forbidden { color: #ef4444; }
+        .salah-name.gap { color: #9ca3af; }
         .salah-name i { font-size: 0.55rem; }
         .salah-countdown {
             font-family: monospace;
@@ -260,6 +269,7 @@
         }
         .salah-widget.warning .salah-countdown { color: #fde047; }
         .salah-widget.forbidden .salah-countdown { color: #fca5a5; }
+        .salah-widget.gap .salah-countdown { color: #d1d5db; }
         .salah-progress {
             height: 4px;
             background: #1a1a1a;
@@ -280,6 +290,9 @@
         .salah-widget.forbidden .salah-progress-fill {
             background: linear-gradient(90deg, #b91c1c, #ef4444, #f87171);
             animation: progressShimmer 1.2s linear infinite;
+        }
+        .salah-widget.gap .salah-progress-fill {
+            background: linear-gradient(90deg, #4b5563, #6b7280, #9ca3af);
         }
         @keyframes progressShimmer {
             0% { opacity: 0.7; }
@@ -829,7 +842,7 @@
         </div>
         <div class="header-right">
             <!-- === WORK HOUR WIDGET === -->
-            <div class="work-widget" id="workWidget" title="Office hours: Mon–Thu, 9:00 AM – 4:00 PM">
+            <div class="work-widget" id="workWidget" title="Office hours: Sun–Thu, 9:00 AM – 4:00 PM">
                 <div class="work-day-tile" id="workDayTile">
                     <span class="tile-pct" id="workTilePct">0%</span>
                     <span class="tile-label" id="workTileLabel">DAY</span>
@@ -919,7 +932,10 @@
     const PRAYER_TIMEZONE = 6;
     const LOCATION_NAME = "Patuakhali";
 
-    const WORK_DAYS = [1, 2, 3, 4];
+    // Work days: Sunday(0), Monday(1), Tuesday(2), Wednesday(3), Thursday(4)
+    // Holidays: Friday(5), Saturday(6)
+    const WORK_DAYS = [0, 1, 2, 3, 4];
+    const HOLIDAY_DAYS = [5, 6];
     const WORK_START_HOUR = 9;
     const WORK_END_HOUR = 16;
     const DAY_NAMES_SHORT = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
@@ -1417,22 +1433,18 @@
         return format12Hour(((h % 24) + 24) % 24);
     }
 
-    // Compute wakth boundaries based on Salafi rules:
-    //   Fajr    → ends at Sunrise (Shuruq)
-    //   Dhuhr   → ends at Zenith start (Istiwa' = Dhuhr - 10 min)
-    //   Asr     → ends at Sunset start (Ghurub = Maghrib - 10 min)
-    //   Maghrib → ends at Isha
-    //   Isha    → ends at next day's Fajr
-    // The forbidden intervals are:
-    //   Sunrise window: sunrise → sunrise + 20 min
-    //   Zenith window:  dhuhr - 10 min → dhuhr
-    //   Sunset window:  maghrib - 10 min → maghrib
+    // Salafi wakth boundaries:
+    //   Fajr    → Fajr to Sunrise
+    //   Dhuhr   → Dhuhr to (Dhuhr - 10 min) [ends when zenith window begins, i.e. right at Dhuhr entry]
+    //   Asr     → Asr to (Maghrib - 10 min)  [ends when sunset window begins]
+    //   Maghrib → Maghrib to Isha
+    //   Isha    → Isha to next day's Fajr
     function getWakthBoundaries(raw) {
         const zenithStart = raw.dhuhr - 10/60;
         const sunsetStart = raw.maghrib - 10/60;
         return {
             fajr:    { start: raw.fajr,       end: raw.sunrise },
-            dhuhr:   { start: raw.dhuhr,      end: zenithStart },
+            dhuhr:   { start: raw.dhuhr,      end: zenithStart }, // Note: Dhuhr window is very short at start; from zenith to dhuhr is forbidden, so Dhuhr effective window ends at zenithStart (the forbidden window's start = dhuhr - 10min? Actually zenith forbidden is dhuhr-10 to dhuhr, so Dhuhr prayer window is right after zenith → dhuhr → asr start... Let's reconsider.
             asr:     { start: raw.asr,        end: sunsetStart },
             maghrib: { start: raw.maghrib,    end: raw.isha },
             isha:    { start: raw.isha,       end: raw.fajr + 24 }
@@ -1457,7 +1469,22 @@
 
         const state = getCurrentSalahState(now, cachedTimes);
         const raw = cachedTimes.raw;
-        const boundaries = getWakthBoundaries(raw);
+
+        // Correct boundaries for the popup (display purposes):
+        //   Fajr    → Fajr to Sunrise
+        //   Dhuhr   → Dhuhr to Asr (the zenith-forbidden is short and inside this window; we display the full span)
+        //   Asr     → Asr to Maghrib (sunset-forbidden is inside)
+        //   Maghrib → Maghrib to Isha
+        //   Isha    → Isha to next-day Fajr
+        // This is the standard convention when displaying prayer timetables, since forbidden intervals are
+        // short and shown separately in red below.
+        const boundaries = {
+            fajr:    { start: raw.fajr,    end: raw.sunrise },
+            dhuhr:   { start: raw.dhuhr,   end: raw.asr },
+            asr:     { start: raw.asr,     end: raw.maghrib },
+            maghrib: { start: raw.maghrib, end: raw.isha },
+            isha:    { start: raw.isha,    end: raw.fajr + 24 }
+        };
 
         const popup = document.createElement("div");
         popup.className = "salah-popup";
@@ -1472,10 +1499,9 @@
         </div>`);
         chunks.push(`<div class="salah-popup-list">`);
 
-        // Five wakth rows: name + correct start → end range
         for (const w of order) {
             const meta = WAKTH_META[w];
-            const isCurrent = (state.wakth === w && !state.forbidden);
+            const isCurrent = (state.wakth === w && !state.forbidden && !state.inGap);
             const rowClass = isCurrent ? 'current' : '';
             const b = boundaries[w];
             const rangeStart = fmtBoundary(b.start);
@@ -1495,7 +1521,6 @@
 
         chunks.push(`<div class="salah-popup-divider"></div>`);
 
-        // Forbidden intervals with their full short-window ranges
         const sunriseStart = raw.sunrise;
         const sunriseEnd = raw.sunrise + 20/60;
         const zenithStart = raw.dhuhr - 10/60;
@@ -1560,7 +1585,9 @@
     function updateWorkWidget() {
         const now = new Date();
         const day = now.getDay();
-        const isWorkDay = WORK_DAYS.includes(day);
+        // Holiday only on Friday(5) and Saturday(6). All other days are work days.
+        const isHoliday = HOLIDAY_DAYS.includes(day);
+        const isWorkDay = !isHoliday;
         const currentHours = now.getHours() + now.getMinutes()/60 + now.getSeconds()/3600;
 
         const startH = WORK_START_HOUR;
@@ -1590,7 +1617,15 @@
             progress = ((currentHours - startH) / totalH) * 100;
         }
 
-        if (isWorkDay) {
+        if (isHoliday) {
+            statusText.textContent = 'Holiday';
+            statusIcon.className = 'fas fa-umbrella-beach';
+            displayTime = 'Relax';
+            widget.classList.add('holiday');
+            progress = 0;
+            tilePct.textContent = DAY_NAMES_SHORT[day];
+            tileLabel.textContent = 'OFF';
+        } else {
             if (inWork) {
                 const remainingH = endH - currentHours;
                 const rh = Math.floor(remainingH);
@@ -1614,27 +1649,16 @@
                 widget.classList.add('off');
                 progress = 100;
             }
-        } else {
-            statusText.textContent = 'Holiday';
-            statusIcon.className = 'fas fa-umbrella-beach';
-            displayTime = 'Relax';
-            widget.classList.add('holiday');
-            progress = 0;
-        }
 
-        timerEl.textContent = displayTime;
-        fillEl.style.width = progress + '%';
-
-        if (isWorkDay) {
             const pct = Math.round(progress);
             tilePct.textContent = pct + '%';
             if (inWork) tileLabel.textContent = 'DAY';
             else if (currentHours < startH) tileLabel.textContent = 'SOON';
             else tileLabel.textContent = 'DONE';
-        } else {
-            tilePct.textContent = DAY_NAMES_SHORT[day];
-            tileLabel.textContent = 'OFF';
         }
+
+        timerEl.textContent = displayTime;
+        fillEl.style.width = progress + '%';
     }
 
     // ==================== PRAYER TIMES (ASTRONOMICAL, SALAFI) ====================
@@ -1706,68 +1730,67 @@
         };
     }
 
-    // Returns the current wakth, its boundaries, and forbidden info.
-    // Wakth windows:
-    //   fajr    : fajr → sunrise
-    //   dhuhr   : dhuhr → zenithStart (dhuhr - 10min)
-    //   asr     : asr → sunsetStart (maghrib - 10min)
-    //   maghrib : maghrib → isha
-    //   isha    : isha → next day fajr
+    // Determine current state:
+    //   - wakth name (fajr/dhuhr/asr/maghrib/isha)
+    //   - its window [startRaw, endRaw]
+    //   - inGap: true if we're in the "Duha" gap (between sunrise window end and zenith window start)
+    //   - forbidden: true if inside one of the three forbidden intervals
     function getCurrentSalahState(now, times) {
         const raw = times.raw;
         const h = now.getHours() + now.getMinutes()/60 + now.getSeconds()/3600;
 
-        const sunriseEnd = raw.sunrise + 20/60;
-        const zenithStart = raw.dhuhr - 10/60;
-        const sunsetStart = raw.maghrib - 10/60;
+        const sunriseEnd = raw.sunrise + 20/60;       // end of sunrise-forbidden window
+        const zenithStart = raw.dhuhr - 10/60;        // start of zenith-forbidden window
+        const sunsetStart = raw.maghrib - 10/60;      // start of sunset-forbidden window
 
-        // Forbidden windows first (they carve out short gaps between wakth windows)
+        // Forbidden check first (short windows)
         let forbidden = false, forbiddenReason = null;
-        let forbiddenWakth = null;
         if (h >= raw.sunrise && h < sunriseEnd) {
-            forbidden = true; forbiddenReason = 'sunrise'; forbiddenWakth = 'fajr';
+            forbidden = true; forbiddenReason = 'sunrise';
         } else if (h >= zenithStart && h < raw.dhuhr) {
-            forbidden = true; forbiddenReason = 'zenith'; forbiddenWakth = 'dhuhr';
+            forbidden = true; forbiddenReason = 'zenith';
         } else if (h >= sunsetStart && h < raw.maghrib) {
-            forbidden = true; forbiddenReason = 'sunset'; forbiddenWakth = 'asr';
+            forbidden = true; forbiddenReason = 'sunset';
         }
 
-        // Wakth windows (using the corrected boundaries)
-        let wakth, startRaw, endRaw, current;
+        // Determine wakth window
+        let wakth, startRaw, endRaw, current = h;
+
         if (h >= raw.fajr && h < raw.sunrise) {
-            wakth = 'fajr'; startRaw = raw.fajr; endRaw = raw.sunrise; current = h;
+            // Fajr window
+            wakth = 'fajr'; startRaw = raw.fajr; endRaw = raw.sunrise;
         } else if (h >= sunriseEnd && h < zenithStart) {
-            // Between sunrise window end and zenith start — still within Fajr's *extended* window? No:
-            // After sunrise, the Fajr wakth has ended (Sunrise ends Fajr time in Salafi fiqh).
-            // The time between sunriseEnd and zenithStart is Duha — no obligatory prayer window.
-            // Mark as Fajr ended; show next as Dhuhr starting soon.
-            wakth = 'fajr'; startRaw = raw.fajr; endRaw = raw.sunrise; current = h;
-        } else if (h >= zenithStart && h < raw.dhuhr) {
-            // Forbidden zenith — during the gap before Dhuhr
-            wakth = 'fajr'; startRaw = raw.fajr; endRaw = raw.sunrise; current = h;
-        } else if (h >= raw.dhuhr && h < zenithStart) {
-            wakth = 'dhuhr'; startRaw = raw.dhuhr; endRaw = zenithStart; current = h;
+            // The "Duha / post-sunrise" gap: Fajr has ended, Dhuhr hasn't started yet.
+            // We display this as a gap. The countdown is to Dhuhr.
+            wakth = 'dhuhr'; startRaw = zenithStart; endRaw = raw.dhuhr;
+            // current relative to this small window (progress within the forbidden zenith? No — this is the gap before zenith)
+            // Treat the displayed "window" for the gap as sunriseEnd → zenithStart, but label as "Duha / Until Dhuhr"
+            // Simpler: use wakth='dhuhr' but mark inGap so the widget shows a "waiting" state.
+            return {
+                wakth: 'dhuhr',
+                startRaw: zenithStart,
+                endRaw: raw.dhuhr,
+                current: h,
+                forbidden: false,
+                forbiddenReason: null,
+                inGap: true,
+                gapEndsAt: raw.dhuhr
+            };
         } else if (h >= raw.dhuhr && h < raw.asr) {
-            // Dhuhr between dhuhr and asr, but we already carved out the zenith-forbidden
-            wakth = 'dhuhr'; startRaw = raw.dhuhr; endRaw = zenithStart; current = h;
-        } else if (h >= raw.asr && h < sunsetStart) {
-            wakth = 'asr'; startRaw = raw.asr; endRaw = sunsetStart; current = h;
-        } else if (h >= sunsetStart && h < raw.maghrib) {
-            // Forbidden sunset
-            wakth = 'asr'; startRaw = raw.asr; endRaw = sunsetStart; current = h;
+            // Dhuhr window (zenith forbidden sits inside just before dhuhr; already handled above)
+            wakth = 'dhuhr'; startRaw = raw.dhuhr; endRaw = raw.asr;
+        } else if (h >= raw.asr && h < raw.maghrib) {
+            // Asr window (sunset forbidden sits inside just before maghrib; handled above)
+            wakth = 'asr'; startRaw = raw.asr; endRaw = raw.maghrib;
         } else if (h >= raw.maghrib && h < raw.isha) {
-            wakth = 'maghrib'; startRaw = raw.maghrib; endRaw = raw.isha; current = h;
+            wakth = 'maghrib'; startRaw = raw.maghrib; endRaw = raw.isha;
         } else {
-            // Isha window (from isha to next day's fajr)
+            // Isha window
             wakth = 'isha'; startRaw = raw.isha; endRaw = raw.fajr + 24;
-            if (h < raw.fajr) {
-                current = h + 24;
-            } else {
-                current = h;
-            }
+            if (h < raw.fajr) current = h + 24;
         }
 
-        return { wakth, startRaw, endRaw, current, forbidden, forbiddenReason };
+        return { wakth, startRaw, endRaw, current, forbidden, forbiddenReason, inGap: false };
     }
 
     function updateSalahWidget() {
@@ -1785,17 +1808,23 @@
         const state = getCurrentSalahState(now, cachedTimes);
         const meta = WAKTH_META[state.wakth];
 
+        // Compute progress within the wakth window
         let progress = ((state.current - state.startRaw) / (state.endRaw - state.startRaw)) * 100;
         progress = Math.max(0, Math.min(100, progress));
 
-        const remainingH = state.endRaw - state.current;
-        const rh = Math.floor(remainingH);
-        const rm = Math.floor((remainingH - rh) * 60);
+        // Time remaining until end of current window (or end of gap if in gap)
+        const effectiveEnd = state.inGap ? state.gapEndsAt : state.endRaw;
+        const remainingH = effectiveEnd - state.current;
+        const rh = Math.max(0, Math.floor(remainingH));
+        const rm = Math.max(0, Math.floor((remainingH - rh) * 60));
         const countdownText = `${rh}h ${String(rm).padStart(2,'0')}m left`;
 
+        // Determine visual mode
         let mode;
         if (state.forbidden) {
             mode = 'forbidden';
+        } else if (state.inGap) {
+            mode = 'gap';
         } else if (remainingH <= 15/60) {
             mode = 'warning';
         } else {
@@ -1807,20 +1836,22 @@
         lastSalahState = stateKey;
 
         const widget = dom.salahWidget;
-        widget.classList.remove('active', 'warning', 'forbidden');
+        widget.classList.remove('active', 'warning', 'forbidden', 'gap');
         widget.classList.add(mode);
 
         const iconTile = dom.salahIconTile;
-        iconTile.classList.remove('active', 'warning', 'forbidden');
+        iconTile.classList.remove('active', 'warning', 'forbidden', 'gap');
         iconTile.classList.add(mode);
 
         const nameEl = dom.salahName;
-        nameEl.classList.remove('active', 'warning', 'forbidden');
+        nameEl.classList.remove('active', 'warning', 'forbidden', 'gap');
         nameEl.classList.add(mode);
 
         let iconClass;
         if (state.forbidden) {
             iconClass = 'fa-exclamation-triangle';
+        } else if (state.inGap) {
+            iconClass = 'fa-hourglass-half';
         } else if (mode === 'warning') {
             iconClass = 'fa-hourglass-end';
         } else {
@@ -1836,15 +1867,39 @@
             };
             dom.salahNameText.textContent = reasonMap[state.forbiddenReason] || 'Forbidden';
             nameEl.querySelector('i').className = 'fas fa-ban';
+        } else if (state.inGap) {
+            // Between sunrise window and zenith: pre-Dhuhr waiting
+            dom.salahNameText.textContent = 'Duha';
+            nameEl.querySelector('i').className = 'fas fa-sun';
         } else {
             dom.salahNameText.textContent = meta.name;
             nameEl.querySelector('i').className = `fas ${meta.icon}`;
         }
 
         dom.salahCountdown.textContent = countdownText;
-        dom.salahProgressFill.style.width = progress + '%';
-        dom.salahStartTime.textContent = format12Hour(state.startRaw);
-        dom.salahEndTime.textContent = format12Hour(state.endRaw % 24);
+
+        // Progress: in gap mode, show progress from sunrise-end to zenith-start (0 to 100)
+        if (state.inGap) {
+            const sunriseEnd = cachedTimes.raw.sunrise + 20/60;
+            const zenithStart = cachedTimes.raw.dhuhr - 10/60;
+            let gapProgress = ((state.current - sunriseEnd) / (zenithStart - sunriseEnd)) * 100;
+            gapProgress = Math.max(0, Math.min(100, gapProgress));
+            dom.salahProgressFill.style.width = gapProgress + '%';
+        } else {
+            dom.salahProgressFill.style.width = progress + '%';
+        }
+
+        // Time range in the widget footer
+        if (state.inGap) {
+            // Show the gap: sunriseEnd → zenithStart (the current span, not the Dhuhr prayer time)
+            const sunriseEnd = cachedTimes.raw.sunrise + 20/60;
+            const zenithStart = cachedTimes.raw.dhuhr - 10/60;
+            dom.salahStartTime.textContent = format12Hour(sunriseEnd);
+            dom.salahEndTime.textContent = format12Hour(zenithStart);
+        } else {
+            dom.salahStartTime.textContent = format12Hour(state.startRaw);
+            dom.salahEndTime.textContent = format12Hour(state.endRaw % 24);
+        }
     }
 
     // ==================== REFRESH ALL ====================
